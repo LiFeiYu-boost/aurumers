@@ -1,5 +1,7 @@
 import { LitElement, css, html, type PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import { api } from "../api/client";
+import { router } from "../router";
 
 const NAV = [
   { href: "/app", label: "看板" },
@@ -7,6 +9,7 @@ const NAV = [
   { href: "/app/chat", label: "Hermes" },
   { href: "/app/records", label: "历史记录" },
   { href: "/app/insights", label: "洞察" },
+  { href: "/app/wallet", label: "钱包" },
   { href: "/app/settings", label: "设置" },
 ];
 
@@ -158,12 +161,14 @@ export class AppShell extends LitElement {
   @property() current = "/";
   @property({ type: Boolean, reflect: true }) menuopen = false;
   @state() private theme = "auto";
+  @state() private isAdmin = false;
 
   connectedCallback(): void {
     super.connectedCallback();
     this.theme = document.documentElement.getAttribute("data-theme") || "auto";
     window.addEventListener("popstate", this._onNav);
     this.current = window.location.pathname || "/";
+    api.auth.me().then((u) => { this.isAdmin = u.role === "admin"; }).catch(() => { this.isAdmin = false; });
   }
   disconnectedCallback(): void {
     super.disconnectedCallback();
@@ -175,6 +180,10 @@ export class AppShell extends LitElement {
   private _onNav = () => { this.current = window.location.pathname || "/"; this.menuopen = false; };
   private _toggleMenu = () => { this.menuopen = !this.menuopen; };
   private _closeMenu = () => { this.menuopen = false; };
+  private _logout = async () => {
+    try { await api.auth.logout(); } catch { /* noop */ }
+    router.navigate("/auth/login");
+  };
   private _toggleTheme = () => {
     const next = this.theme === "dark" ? "light" : this.theme === "light" ? "auto" : "dark";
     this.theme = next;
@@ -205,10 +214,12 @@ export class AppShell extends LitElement {
                 class="${this.current === item.href || (item.href !== "/app" && this.current.startsWith(item.href)) ? "active" : ""}"
               >${item.label}</a>
             `)}
+            ${this.isAdmin ? html`<a data-route href="/_ops" class="${this.current.startsWith("/_ops") ? "active" : ""}">管理</a>` : ""}
           </nav>
           <div class="backdrop" @click=${this._closeMenu}></div>
           <div class="right">
             <button class="icon-btn" @click=${this._toggleTheme} title="切换主题（auto / light / dark）">${themeIcon}</button>
+            <button class="icon-btn" @click=${this._logout} title="登出">⏻</button>
             <button class="icon-btn hamburger" @click=${this._toggleMenu} aria-label="菜单" title="菜单">${this.menuopen ? "✕" : "☰"}</button>
           </div>
         </div>

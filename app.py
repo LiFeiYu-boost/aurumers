@@ -208,6 +208,19 @@ def records_legacy():
     return _serve_spa()
 
 
+@app.get("/auth/{path:path}")
+def auth_spa(path: str):
+    """SPA fallback：登录/注册等前端路由直接访问/刷新时返回 index。"""
+    return _serve_spa()
+
+
+@app.get("/_ops")
+@app.get("/_ops/{path:path}")
+def ops_spa(path: str = ""):
+    """SPA fallback：管理后台前端路由直接访问/刷新时返回 index。"""
+    return _serve_spa()
+
+
 # ----- Existing API endpoints --------------------------------------------------
 
 @app.get("/api/health")

@@ -25,7 +25,11 @@ function requireAuth(render: RouteRender): RouteRender {
     container.dataset.title = "加载中";
     api.auth
       .me()
-      .then(() => container.replaceChildren(render(params)))
+      .then(() => {
+        const el = render(params);
+        container.replaceChildren(el);
+        if (el.dataset?.title) document.title = `${el.dataset.title} · Aurumers`;
+      })
       .catch(() => router.navigate("/auth/login"));
     return container;
   };

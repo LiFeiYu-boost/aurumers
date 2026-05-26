@@ -36,5 +36,7 @@ _*.png
 
 # ── 杂项 ──
 .DS_Store
+.idea/
+.vscode/
 *.bak
 *.bak.*
