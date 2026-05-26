@@ -14,6 +14,7 @@ import { renderAuth } from "./pages/AuthPage";
 import { renderWallet } from "./pages/WalletPage";
 import { renderAdmin } from "./pages/AdminPage";
 import { renderAccount } from "./pages/AccountPage";
+import { renderHoldings } from "./pages/HoldingsPage";
 import { initTheme } from "./theme";
 
 initTheme();
@@ -42,6 +43,7 @@ router
   .on("/app/insights", requireAuth(renderInsights))
   .on("/app/settings", requireAuth(renderSettings))
   .on("/app/chat", requireAuth(renderChat))
+  .on("/app/holdings", requireAuth(renderHoldings))
   .on("/app/wallet", requireAuth(renderWallet))
   .on("/app/account", requireAuth(renderAccount))
   .on("/app", requireAuth(renderDashboard))

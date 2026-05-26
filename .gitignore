@@ -24,6 +24,10 @@ frontend/node_modules/
 frontend/dist/
 static_dist/
 
+# ── 训练好的模型(构建产物,由 scripts/train_trend_model.py 生成,部署经 scp) ──
+models/
+*.joblib
+
 # ── 部署细节(含主机/凭据)、运行产物、开发截图 ──
 deploy/
 reports/

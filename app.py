@@ -31,6 +31,7 @@ from config import settings
 from schemas import BroadcastEvent
 import auth_utils
 import billing
+import signal_service
 import storage.auth_store as auth_store
 from storage.record_manager import (
     append_chat_message,
@@ -237,6 +238,60 @@ def health():
 def read_gold_price():
     snapshot = get_market_snapshot()
     return success_response(snapshot)
+
+
+@app.get("/api/signal/latest")
+def read_trend_signal():
+    """最新黄金趋势信号(多周期集成,未来约1个月方向)。"""
+    try:
+        sig = signal_service.get_signal()
+        return success_response({**sig, "disclaimer": signal_service.DISCLAIMER})
+    except FileNotFoundError:
+        return error_response("信号模型尚未部署", status_code=503)
+    except Exception:
+        logger.exception("trend signal failed")
+        return error_response("信号计算失败，请稍后再试", status_code=503)
+
+
+@app.post("/api/holdings/advice")
+async def holdings_advice(request: Request):
+    """持仓助手:输入持仓(总价值 或 成本价×克数)→ 信号驱动的买卖建议。"""
+    try:
+        body = await request.json()
+    except Exception:
+        return error_response("请求体无效", status_code=400)
+
+    grams = body.get("grams")
+    cost_per_g = body.get("cost_per_g")
+    value_cny = body.get("value_cny")
+
+    try:
+        sig = signal_service.get_signal()
+    except FileNotFoundError:
+        return error_response("信号模型尚未部署", status_code=503)
+    except Exception:
+        logger.exception("trend signal failed")
+        return error_response("信号计算失败，请稍后再试", status_code=503)
+    price = sig["price_cny_per_g"]
+
+    # 两种输入归一到克数
+    try:
+        if grams is not None:
+            grams = float(grams)
+        elif value_cny is not None:
+            grams = float(value_cny) / price
+        else:
+            return error_response("请提供持仓克数或总价值", status_code=400)
+        if grams <= 0 or grams > 1e7:
+            return error_response("持仓数值超出合理范围", status_code=400)
+        if cost_per_g is not None:
+            cost_per_g = float(cost_per_g)
+            if cost_per_g <= 0 or cost_per_g > 1e6:
+                return error_response("成本价超出合理范围", status_code=400)
+    except (TypeError, ValueError):
+        return error_response("持仓数值无效", status_code=400)
+
+    return success_response(signal_service.build_advice(round(grams, 4), cost_per_g))
 
 
 @app.post("/api/analysis/run")

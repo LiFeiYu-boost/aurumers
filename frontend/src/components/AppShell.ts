@@ -7,6 +7,7 @@ const NAV = [
   { href: "/app", label: "看板" },
   { href: "/app/predictions", label: "预测中心" },
   { href: "/app/chat", label: "Hermes" },
+  { href: "/app/holdings", label: "持仓助手" },
   { href: "/app/records", label: "历史记录" },
   { href: "/app/insights", label: "洞察" },
   { href: "/app/wallet", label: "钱包" },

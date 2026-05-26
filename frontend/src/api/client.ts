@@ -92,6 +92,48 @@ async function request<T>(
   throw lastError instanceof Error ? lastError : new ApiError("请求失败");
 }
 
+export interface TrendSignal {
+  asof: string;
+  price_cny_per_g: number;
+  prob_up: number;
+  prob_by_horizon: Record<string, number>;
+  direction: string;
+  confidence: string;
+  horizon_agreement: number;
+  target_exposure: number;
+  crowding: string | null;
+  model: string;
+  trained_at?: string;
+  train_span?: [string, string];
+  disclaimer?: string;
+}
+
+export interface HoldingsAdvice {
+  holdings: {
+    grams: number;
+    price_per_g: number;
+    current_value: number;
+    pnl: { cost_basis: number; pnl: number; pnl_pct: number } | null;
+  };
+  signal: {
+    asof: string;
+    direction: string;
+    confidence: string;
+    prob_up: number;
+    horizon_agreement: number;
+    target_exposure: number;
+    crowding: string | null;
+    horizon: string;
+  };
+  advice: {
+    action: string;
+    headline: string;
+    detail: { type: string; sell_grams_range: [number, number] | null; sell_value_range: [number, number] | null };
+    risk_note: string;
+  };
+  disclaimer: string;
+}
+
 export const api = {
   // Auth / 用户体系 (task #62) — 同源 fetch 自动携带会话 cookie
   auth: {
@@ -111,6 +153,13 @@ export const api = {
     info: () => request<{ balance_cents: number; today_cost_cents: number; daily_free_limit_cents: number; free_remaining_cents: number }>("/api/wallet"),
     redeem: (code: string) =>
       request<{ added_cents: number; balance_cents: number }>("/api/wallet/redeem", { method: "POST", body: JSON.stringify({ code }) }),
+  },
+
+  // 趋势信号 + 持仓助手
+  signal: {
+    latest: () => request<TrendSignal>("/api/signal/latest"),
+    advice: (body: { grams?: number; cost_per_g?: number; value_cny?: number }) =>
+      request<HoldingsAdvice>("/api/holdings/advice", { method: "POST", body: JSON.stringify(body) }),
   },
 
   // 管理后台 (task #62 阶段5)
