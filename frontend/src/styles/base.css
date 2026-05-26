@@ -152,6 +152,7 @@ ul {
 .btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
     padding: 11px 18px;
     border-radius: var(--r-sm);
