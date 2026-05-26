@@ -28,6 +28,18 @@ export function renderAdmin(): HTMLElement {
           <div id="users"><div style="color:var(--c-text-mute);font-size:13px;margin-top:8px;">加载中…</div></div>
         </div>
         <div class="panel">
+          <div style="font-weight:500;">创建用户</div>
+          <div class="gen-row">
+            <input id="nu-name" placeholder="用户名(≥3位)" style="width:150px" />
+            <input id="nu-pw" type="password" placeholder="密码(≥6位)" style="width:150px" />
+            <select id="nu-role" style="padding:8px 12px;border:1px solid var(--c-border);border-radius:8px;background:var(--c-bg);color:var(--c-text);">
+              <option value="user">user</option>
+              <option value="admin">admin</option>
+            </select>
+            <button id="nu-create" class="btn btn-primary">创建</button>
+          </div>
+        </div>
+        <div class="panel">
           <div style="font-weight:500;">生成兑换码</div>
           <div class="gen-row">
             <input id="cents" type="number" placeholder="金额(分)" value="1000" />
@@ -57,7 +69,11 @@ export function renderAdmin(): HTMLElement {
           <td>${u.status}</td>
           <td>¥${yuan(u.balance_cents)}</td>
           <td>${u.daily_free_cents === null ? "默认" : "¥" + yuan(u.daily_free_cents)}</td>
-          <td><button class="mini" data-edit="${u.id}">改额度</button></td>
+          <td>
+            <button class="mini" data-edit="${u.id}">额度</button>
+            <button class="mini" data-reset="${u.id}">重置密码</button>
+            <button class="mini" data-del="${u.id}" data-name="${u.username}">注销</button>
+          </td>
         </tr>`,
         )
         .join("");
@@ -79,6 +95,31 @@ export function renderAdmin(): HTMLElement {
           }
         }),
       );
+      box.querySelectorAll<HTMLButtonElement>("[data-reset]").forEach((b) =>
+        b.addEventListener("click", async () => {
+          const pw = prompt("为该用户设置新密码(至少 6 位)");
+          if (pw === null) return;
+          if (pw.length < 6) { toast("密码至少 6 位", "error"); return; }
+          try {
+            await api.admin.resetPassword(b.dataset.reset!, pw);
+            toast("密码已重置", "success");
+          } catch (e: any) {
+            toast(e?.message || "重置失败", "error");
+          }
+        }),
+      );
+      box.querySelectorAll<HTMLButtonElement>("[data-del]").forEach((b) =>
+        b.addEventListener("click", async () => {
+          if (!confirm(`确定注销用户「${b.dataset.name}」?将停用其账号、清其会话。`)) return;
+          try {
+            await api.admin.deleteUser(b.dataset.del!);
+            toast("已注销", "success");
+            void loadUsers();
+          } catch (e: any) {
+            toast(e?.message || "注销失败", "error");
+          }
+        }),
+      );
     } catch (e: any) {
       if (box) box.innerHTML = `<div style="color:var(--c-down);font-size:13px;margin-top:8px;">${e?.message || "加载失败(需管理员登录)"}</div>`;
     }
@@ -94,6 +135,24 @@ export function renderAdmin(): HTMLElement {
       toast("已生成", "success");
     } catch (e: any) {
       toast(e?.message || "生成失败", "error");
+    }
+  });
+
+  root.querySelector("#nu-create")?.addEventListener("click", async () => {
+    const name = root.querySelector<HTMLInputElement>("#nu-name")?.value.trim() ?? "";
+    const pw = root.querySelector<HTMLInputElement>("#nu-pw")?.value ?? "";
+    const role = root.querySelector<HTMLSelectElement>("#nu-role")?.value ?? "user";
+    if (name.length < 3 || pw.length < 6) { toast("用户名≥3位、密码≥6位", "error"); return; }
+    try {
+      await api.admin.createUser(name, pw, role);
+      toast("用户已创建", "success");
+      const n = root.querySelector<HTMLInputElement>("#nu-name");
+      const p = root.querySelector<HTMLInputElement>("#nu-pw");
+      if (n) n.value = "";
+      if (p) p.value = "";
+      void loadUsers();
+    } catch (e: any) {
+      toast(e?.message || "创建失败", "error");
     }
   });
 

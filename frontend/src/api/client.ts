@@ -101,6 +101,9 @@ export const api = {
       request<AuthUser>("/api/auth/login", { method: "POST", body: JSON.stringify({ username, password }) }),
     logout: () => request<{ ok: boolean }>("/api/auth/logout", { method: "POST" }),
     me: () => request<AuthUser>("/api/auth/me"),
+    changePassword: (oldPassword: string, newPassword: string) =>
+      request<{ ok: boolean }>("/api/auth/password", { method: "POST", body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }) }),
+    deleteAccount: () => request<{ ok: boolean }>("/api/auth/account", { method: "DELETE" }),
   },
 
   // 钱包 (task #62 阶段4)
@@ -118,6 +121,12 @@ export const api = {
     listCodes: () => request<Array<{ code: string; cents: number; used_by: string | null; created_at: string }>>("/api/admin/codes"),
     createCodes: (cents: number, count: number) =>
       request<{ codes: string[]; cents: number }>("/api/admin/codes", { method: "POST", body: JSON.stringify({ cents, count }) }),
+    createUser: (username: string, password: string, role = "user") =>
+      request<AuthUser>("/api/admin/users", { method: "POST", body: JSON.stringify({ username, password, role }) }),
+    resetPassword: (id: string, password: string) =>
+      request<AuthUser>(`/api/admin/users/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ password }) }),
+    deleteUser: (id: string) =>
+      request<{ ok: boolean }>(`/api/admin/users/${encodeURIComponent(id)}`, { method: "DELETE" }),
   },
 
   // Live spot price + market state (huilvbiao mirror)

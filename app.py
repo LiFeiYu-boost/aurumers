@@ -633,6 +633,39 @@ async def auth_me(request: Request):
     return success_response(data)
 
 
+@app.post("/api/auth/password")
+async def auth_change_password(request: Request):
+    """用户自助改密码(需验证旧密码)。"""
+    user = auth_utils.get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="未登录")
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="请求体不是合法 JSON")
+    old_pw = str((body or {}).get("old_password", ""))
+    new_pw = str((body or {}).get("new_password", ""))
+    if not (6 <= len(new_pw) <= 128):
+        raise HTTPException(status_code=400, detail="新密码需 6-128 位")
+    fresh = auth_store.get_user_by_id(user["id"])
+    if not fresh or not auth_utils.verify_password(fresh["password_hash"], old_pw):
+        raise HTTPException(status_code=401, detail="旧密码错误")
+    auth_store.set_user_password(user["id"], auth_utils.hash_password(new_pw))
+    return success_response({"ok": True})
+
+
+@app.delete("/api/auth/account")
+async def auth_delete_account(request: Request, response: Response):
+    """用户自助注销:停用账号 + 清所有会话,停用后无法再登录。"""
+    user = auth_utils.get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="未登录")
+    auth_store.update_user_fields(user["id"], status="disabled")
+    auth_store.delete_user_sessions(user["id"])
+    auth_utils.clear_session_cookie(response)
+    return success_response({"ok": True})
+
+
 # ----- 钱包 (task #62 阶段4) --------------------------------------------------
 
 @app.get("/api/wallet")
@@ -689,21 +722,60 @@ async def admin_list_users(request: Request):
     return success_response([_public_user(u) for u in auth_store.list_users()])
 
 
-@app.patch("/api/admin/users/{uid}")
-async def admin_update_user(uid: str, request: Request):
+@app.post("/api/admin/users")
+async def admin_create_user(request: Request):
+    """管理员创建用户。"""
     _require_admin_state(request)
     try:
         body = await request.json()
     except Exception:
         raise HTTPException(status_code=400, detail="请求体不是合法 JSON")
+    username, password = _validate_credentials(body)
+    if auth_store.get_user_by_username(username) is not None:
+        raise HTTPException(status_code=409, detail="用户名已被占用")
+    role = "admin" if (body or {}).get("role") == "admin" else "user"
+    user = auth_store.create_user(username, auth_utils.hash_password(password), role=role)
+    return success_response(_public_user(user))
+
+
+@app.patch("/api/admin/users/{uid}")
+async def admin_update_user(uid: str, request: Request):
+    """管理员改用户:role/status/额度/余额,以及重置密码(password)。"""
+    _require_admin_state(request)
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="请求体不是合法 JSON")
+    changed = False
+    pw = (body or {}).get("password")
+    if pw:
+        if not (6 <= len(str(pw)) <= 128):
+            raise HTTPException(status_code=400, detail="密码需 6-128 位")
+        auth_store.set_user_password(uid, auth_utils.hash_password(str(pw)))
+        changed = True
     fields = {k: body[k] for k in ("role", "status", "daily_free_cents", "balance_cents") if k in body}
-    if not fields:
+    if fields:
+        auth_store.update_user_fields(uid, **fields)
+        changed = True
+    if not changed:
         raise HTTPException(status_code=400, detail="无可更新字段")
-    auth_store.update_user_fields(uid, **fields)
     fresh = auth_store.get_user_by_id(uid)
     if not fresh:
         raise HTTPException(status_code=404, detail="用户不存在")
     return success_response(_public_user(fresh))
+
+
+@app.delete("/api/admin/users/{uid}")
+async def admin_delete_user(uid: str, request: Request):
+    """管理员注销用户:软删(停用 + 清会话),不能删自己。"""
+    admin = _require_admin_state(request)
+    if uid == admin["id"]:
+        raise HTTPException(status_code=400, detail="不能注销自己")
+    if auth_store.get_user_by_id(uid) is None:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    auth_store.update_user_fields(uid, status="disabled")
+    auth_store.delete_user_sessions(uid)
+    return success_response({"ok": True})
 
 
 @app.get("/api/admin/codes")

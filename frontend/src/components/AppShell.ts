@@ -10,6 +10,7 @@ const NAV = [
   { href: "/app/records", label: "历史记录" },
   { href: "/app/insights", label: "洞察" },
   { href: "/app/wallet", label: "钱包" },
+  { href: "/app/account", label: "账号" },
   { href: "/app/settings", label: "设置" },
 ];
 
