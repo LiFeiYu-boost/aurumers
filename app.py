@@ -570,6 +570,9 @@ def _validate_credentials(body: dict) -> tuple[str, str]:
 async def auth_register(request: Request, response: Response):
     if not settings.enable_registration:
         raise HTTPException(status_code=403, detail="注册已关闭")
+    ip = request.client.host if request.client else "?"
+    if auth_utils.register_rate_limited(ip):
+        raise HTTPException(status_code=429, detail="注册过于频繁,请稍后再试")
     try:
         body = await request.json()
     except Exception:
@@ -581,6 +584,7 @@ async def auth_register(request: Request, response: Response):
     token = auth_utils.new_session_token()
     auth_store.create_session(user["id"], token, settings.session_ttl_hours * 3600)
     auth_utils.set_session_cookie(response, token)
+    auth_utils.record_register(ip)
     return success_response(_public_user(user))
 
 

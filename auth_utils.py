@@ -99,3 +99,21 @@ def record_login_fail(key: str) -> None:
 
 def clear_login_fails(key: str) -> None:
     _login_fails.pop(key, None)
+
+
+# ----- 注册限速(per-IP,防注册轰炸 + argon2 CPU 滥用) -------------------------
+
+_register_hits: dict[str, list[float]] = {}
+_REG_MAX = 5
+_REG_WINDOW = 3600  # 每 IP 每小时最多 5 次注册
+
+
+def register_rate_limited(ip: str) -> bool:
+    now = time.time()
+    arr = [t for t in _register_hits.get(ip, []) if now - t < _REG_WINDOW]
+    _register_hits[ip] = arr
+    return len(arr) >= _REG_MAX
+
+
+def record_register(ip: str) -> None:
+    _register_hits.setdefault(ip, []).append(time.time())

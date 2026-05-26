@@ -228,6 +228,9 @@ export class AppShell extends LitElement {
       <main>
         <slot></slot>
       </main>
+      <footer style="text-align:center;padding:22px 16px 28px;font-size:12px;color:var(--c-text-mute);border-top:1px solid var(--c-border);margin-top:36px;line-height:1.7;">
+        ⚠️ 本站金价预测与分析均由 AI 自动生成,仅供研究参考,<strong>不构成任何投资建议</strong>;市场有风险,据此操作风险自负。
+      </footer>
     `;
   }
 }
