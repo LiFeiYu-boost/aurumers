@@ -1,0 +1,126 @@
+/* Aurumers design tokens — neutral × deep gold, premium financial aesthetic */
+:root[data-theme="light"], :root:not([data-theme]) {
+    color-scheme: light;
+    --c-bg:        #fafaf9;
+    --c-bg-soft:   #f5f5f4;
+    --c-bg-deep:   #efeee9;
+    --c-surface:   #ffffff;
+    --c-surface-2: #fbfaf7;
+    --c-surface-elev: #ffffff;
+    --c-border:    #e7e5e4;
+    --c-border-strong: #d6d3d1;
+    --c-text:      #0a0a0a;
+    --c-text-soft: #4a4a48;
+    --c-text-mute: #7e7a76;
+    --c-text-faint: #b8b4b0;
+
+    --c-accent:        #b8860b;
+    --c-accent-bright: #d4a52d;
+    --c-accent-deep:   #6b4f0a;
+    --c-accent-hover:  #9c7209;
+    --c-accent-soft:   rgba(184, 134, 11, 0.10);
+    --c-accent-line:   rgba(184, 134, 11, 0.24);
+
+    --c-up:    #15803d;
+    --c-down:  #b91c1c;
+    --c-flat:  #a16207;
+    --c-unknown: #6b7280;
+    --c-up-soft:    rgba(21, 128, 61, 0.10);
+    --c-down-soft:  rgba(185, 28, 28, 0.10);
+    --c-flat-soft:  rgba(161, 98, 7, 0.12);
+    --c-unknown-soft: rgba(107, 114, 128, 0.10);
+
+    /* Chat user bubble: light = high-contrast inverted; dark uses tinted accent (defined below) */
+    --c-bubble-user-bg: var(--c-text);
+    --c-bubble-user-fg: var(--c-bg);
+
+    /* Segmented active state: light = inverted black; dark uses brand gold (set below) */
+    --c-segmented-active-bg: var(--c-text);
+    --c-segmented-active-fg: var(--c-bg);
+
+    --shadow-xs: 0 1px 1px rgba(15, 12, 8, 0.04);
+    --shadow-sm: 0 1px 2px rgba(15, 12, 8, 0.05);
+    --shadow-md: 0 1px 2px rgba(15, 12, 8, 0.05), 0 8px 24px -12px rgba(15, 12, 8, 0.10);
+    --shadow-lg: 0 1px 2px rgba(15, 12, 8, 0.05), 0 20px 56px -20px rgba(15, 12, 8, 0.18);
+    --shadow-glow: 0 0 0 1px rgba(184, 134, 11, 0.18), 0 14px 40px -14px rgba(184, 134, 11, 0.36);
+
+    --gradient-hero:
+        radial-gradient(900px 500px at 80% -100px, rgba(212, 165, 45, 0.22), transparent 65%),
+        radial-gradient(700px 400px at 0% 100%, rgba(184, 134, 11, 0.10), transparent 60%);
+    --gradient-mark: linear-gradient(135deg, #d4a52d 0%, #6b4f0a 100%);
+    --gradient-cta: linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%);
+
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 14px;
+    --r-xl: 20px;
+}
+
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --c-bg:        #0a0a09;
+    --c-bg-soft:   #131311;
+    --c-bg-deep:   #07070b;
+    --c-surface:   #181816;
+    --c-surface-2: #1d1d1b;
+    --c-surface-elev: #232220;
+    --c-border:    #2a2a27;
+    --c-border-strong: #3a3a36;
+    --c-text:      #f5f5f4;
+    --c-text-soft: #c8c5c1;
+    --c-text-mute: #94908b;
+    --c-text-faint: #645f5a;
+
+    --c-accent:        #d4a52d;
+    --c-accent-bright: #f4cb56;
+    --c-accent-deep:   #8a6814;
+    --c-accent-hover:  #e6b94a;
+    --c-accent-soft:   rgba(212, 165, 45, 0.14);
+    --c-accent-line:   rgba(212, 165, 45, 0.30);
+
+    --c-up:    #4ade80;
+    --c-down:  #f87171;
+    --c-flat:  #fbbf24;
+    --c-unknown: #a8a29e;
+    --c-up-soft:    rgba(74, 222, 128, 0.12);
+    --c-down-soft:  rgba(248, 113, 113, 0.14);
+    --c-flat-soft:  rgba(251, 191, 36, 0.14);
+    --c-unknown-soft: rgba(168, 162, 158, 0.12);
+
+    /* Dark: user bubble uses tinted accent over dark bg — avoids the "white searchlight" */
+    --c-bubble-user-bg: rgba(212, 165, 45, 0.16);
+    --c-bubble-user-fg: var(--c-text);
+
+    /* Dark: segmented active uses gold so it doesn't look disabled against dark surfaces */
+    --c-segmented-active-bg: var(--c-accent);
+    --c-segmented-active-fg: #0a0a09;
+
+    --shadow-xs: 0 1px 1px rgba(0, 0, 0, 0.5);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.55);
+    --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.55), 0 14px 32px -12px rgba(0, 0, 0, 0.6);
+    --shadow-lg: 0 1px 2px rgba(0, 0, 0, 0.55), 0 24px 64px -20px rgba(0, 0, 0, 0.7);
+    --shadow-glow: 0 0 0 1px rgba(212, 165, 45, 0.30), 0 18px 48px -16px rgba(212, 165, 45, 0.30);
+
+    --gradient-hero:
+        radial-gradient(1200px 700px at 80% -100px, rgba(212, 165, 45, 0.22), transparent 60%),
+        radial-gradient(900px 600px at 0% 110%, rgba(212, 165, 45, 0.07), transparent 65%);
+    --gradient-mark: linear-gradient(135deg, #f4cb56 0%, #6b4f0a 100%);
+    /* Dark: primary CTA goes gold (was light grey, looked disabled against dark cards) */
+    --gradient-cta: linear-gradient(180deg, #f4cb56 0%, #d4a52d 100%);
+}
+
+:root {
+    --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-out:    cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-in:     cubic-bezier(0.4, 0, 1, 1);
+    --dur-fast: 160ms;
+    --dur-base: 240ms;
+    --dur-slow: 480ms;
+    --dur-grand: 720ms;
+
+    --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+                 "Inter", "Helvetica Neue", "Segoe UI", "PingFang SC",
+                 "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+    --font-mono: "SF Mono", ui-monospace, "JetBrains Mono", "Roboto Mono",
+                 "Fira Code", Menlo, Consolas, monospace;
+}

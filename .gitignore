@@ -1,0 +1,40 @@
+# ── 环境与密钥(绝不上传) ──
+.env
+.env.*
+!.env.example
+
+# ── Python ──
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# ── 数据库 / 运行数据(含密码哈希、API key、用户与聊天数据) ──
+*.db
+*.sqlite
+*.sqlite-*
+gold_records.db
+frontend/gold_records.db
+data/
+
+# ── 前端依赖与构建产物 ──
+frontend/node_modules/
+frontend/dist/
+static_dist/
+
+# ── 部署细节(含主机/凭据)、运行产物、开发截图 ──
+deploy/
+reports/
+hermes_workdir/
+audits/
+logs/
+*.log
+_screenshots/
+_*.png
+
+# ── 杂项 ──
+.DS_Store
+*.bak
+*.bak.*
