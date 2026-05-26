@@ -191,41 +191,30 @@ export const api = {
   // Hermes chat
   chat: {
     greeting: () => request<ChatGreeting>("/api/chat/greeting"),
-    listSessions: (clientId: string) =>
-      request<ChatSession[]>("/api/chat/sessions", {
-        headers: { "X-Aurumers-Client-Id": clientId },
-      }),
-    createSession: (clientId: string, title?: string) =>
+    // 多租户:chat 不再传 client_id,后端按登录会话(同源 cookie)的 user_id 隔离。
+    listSessions: () => request<ChatSession[]>("/api/chat/sessions"),
+    createSession: (title?: string) =>
       request<ChatSession>("/api/chat/sessions", {
         method: "POST",
-        headers: { "X-Aurumers-Client-Id": clientId },
         body: JSON.stringify({ title }),
       }),
-    deleteSession: (sessionId: string, clientId: string) =>
+    deleteSession: (sessionId: string) =>
       request<{ archived: boolean; session_id: string }>(
         `/api/chat/sessions/${encodeURIComponent(sessionId)}`,
-        {
-          method: "DELETE",
-          headers: { "X-Aurumers-Client-Id": clientId },
-        },
+        { method: "DELETE" },
       ),
-    listMessages: (sessionId: string, clientId: string) =>
+    listMessages: (sessionId: string) =>
       request<ChatMessage[]>(
         `/api/chat/sessions/${encodeURIComponent(sessionId)}/messages`,
-        { headers: { "X-Aurumers-Client-Id": clientId } },
       ),
     streamMessage: async function* (
       sessionId: string,
-      clientId: string,
       content: string,
     ): AsyncGenerator<string, void, void> {
       const url = `/api/chat/sessions/${encodeURIComponent(sessionId)}/message`;
       const response = await fetch(url, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Aurumers-Client-Id": clientId,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content }),
       });
       if (!response.ok) {

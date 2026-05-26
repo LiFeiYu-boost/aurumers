@@ -744,23 +744,25 @@ def _validate_client_id(client_id: str | None) -> str:
     return client_id
 
 
-def _resolve_client_id(request: Request, query_value: str | None) -> str:
-    """Prefer X-Aurumers-Client-Id header (kept out of access logs); fall back to query."""
-    header_value = request.headers.get("X-Aurumers-Client-Id")
-    candidate = (header_value or query_value or "").strip()
-    return _validate_client_id(candidate)
+def _require_uid(request: Request) -> str:
+    """多租户隔离:从登录会话取 user_id(中间件已保证 /api/chat/* 需登录)。
+    chat 一律按 user_id 隔离,不再接受前端自报的 client_id。"""
+    user = getattr(request.state, "user", None)
+    if not user:
+        raise HTTPException(status_code=401, detail="未登录")
+    return user["id"]
 
 
-def _ensure_session_owned(session_id: str, client_id: str):
-    session = get_chat_session(session_id, client_id)
+def _ensure_session_owned(session_id: str, user_id: str):
+    session = get_chat_session(session_id, user_id)
     if session is None:
-        raise HTTPException(status_code=404, detail="会话不存在或不属于该 client")
+        raise HTTPException(status_code=404, detail="会话不存在或不属于当前用户")
     return session
 
 
 @app.get("/api/chat/sessions")
-def chat_list_sessions(request: Request, client_id: str | None = Query(default=None, max_length=128)):
-    cid = _resolve_client_id(request, client_id)
+def chat_list_sessions(request: Request):
+    cid = _require_uid(request)
     return success_response([s.model_dump(mode="json") for s in list_chat_sessions(cid)])
 
 
@@ -770,8 +772,7 @@ async def chat_create_session(request: Request):
         body = await request.json()
     except Exception:
         body = {}
-    body_cid = body.get("client_id") if isinstance(body, dict) else None
-    cid = _resolve_client_id(request, body_cid)
+    cid = _require_uid(request)
     title = (body.get("title") if isinstance(body, dict) else None) or "新对话"
     session_id = str(uuid.uuid4())
     session = create_chat_session(session_id, cid, str(title)[:64])
@@ -779,16 +780,16 @@ async def chat_create_session(request: Request):
 
 
 @app.delete("/api/chat/sessions/{session_id}")
-def chat_delete_session(session_id: str, request: Request, client_id: str | None = Query(default=None, max_length=128)):
-    cid = _resolve_client_id(request, client_id)
+def chat_delete_session(session_id: str, request: Request):
+    cid = _require_uid(request)
     if archive_chat_session(session_id, cid):
         return success_response({"archived": True, "session_id": session_id})
-    return error_response("会话不存在或不属于该 client", status_code=404)
+    return error_response("会话不存在或不属于当前用户", status_code=404)
 
 
 @app.get("/api/chat/sessions/{session_id}/messages")
-def chat_list_messages(session_id: str, request: Request, client_id: str | None = Query(default=None, max_length=128)):
-    cid = _resolve_client_id(request, client_id)
+def chat_list_messages(session_id: str, request: Request):
+    cid = _require_uid(request)
     _ensure_session_owned(session_id, cid)
     return success_response([m.model_dump(mode="json") for m in list_chat_messages(session_id, cid)])
 
@@ -827,12 +828,11 @@ async def chat_greeting():
 async def chat_post_message(
     session_id: str,
     request: Request,
-    client_id: str | None = Query(default=None, max_length=128),
 ):
     from fastapi.responses import StreamingResponse
     from schemas import ChatRole
 
-    cid = _resolve_client_id(request, client_id)
+    cid = _require_uid(request)
     session = _ensure_session_owned(session_id, cid)
 
     if count_chat_messages(session_id) >= CHAT_MAX_MESSAGES_PER_SESSION:

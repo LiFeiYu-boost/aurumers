@@ -202,7 +202,7 @@ async function boot(root: HTMLElement, state: State) {
   try {
     const [greeting, sessions] = await Promise.all([
       api.chat.greeting(),
-      api.chat.listSessions(state.clientId),
+      api.chat.listSessions(),
     ]);
     state.greeting = greeting;
     state.sessions = sessions;
@@ -231,7 +231,7 @@ function refreshSessionList(root: HTMLElement, state: State) {
 
 async function createSession(root: HTMLElement, state: State) {
   try {
-    const session = await api.chat.createSession(state.clientId);
+    const session = await api.chat.createSession();
     state.sessions = [session, ...state.sessions];
     state.activeId = session.id;
     state.messages = [];
@@ -247,7 +247,7 @@ async function switchSession(root: HTMLElement, state: State, id: string) {
   try {
     state.activeId = id;
     refreshSessionList(root, state);
-    state.messages = await api.chat.listMessages(id, state.clientId);
+    state.messages = await api.chat.listMessages(id);
     const matched = state.sessions.find((s) => s.id === id);
     setTitle(root, matched?.title || "Hermes 对话");
     renderThread(root, state);
@@ -259,7 +259,7 @@ async function switchSession(root: HTMLElement, state: State, id: string) {
 async function deleteSession(root: HTMLElement, state: State, id: string) {
   if (!confirm("删除这个对话？历史消息会被归档但不再显示。")) return;
   try {
-    await api.chat.deleteSession(id, state.clientId);
+    await api.chat.deleteSession(id);
     state.sessions = state.sessions.filter((s) => s.id !== id);
     if (state.activeId === id) {
       if (state.sessions.length > 0) {
@@ -358,7 +358,7 @@ async function sendMessage(root: HTMLElement, state: State, content: string) {
   };
 
   try {
-    for await (const chunk of api.chat.streamMessage(state.activeId, state.clientId, trimmed)) {
+    for await (const chunk of api.chat.streamMessage(state.activeId, trimmed)) {
       buffer += chunk;
       everReceived = true;
       if (frame === null) frame = requestAnimationFrame(flush);
@@ -399,7 +399,7 @@ async function sendMessage(root: HTMLElement, state: State, content: string) {
 
 async function refreshSessions(root: HTMLElement, state: State) {
   try {
-    const fresh = await api.chat.listSessions(state.clientId);
+    const fresh = await api.chat.listSessions();
     state.sessions = fresh;
     refreshSessionList(root, state);
     const active = fresh.find((s) => s.id === state.activeId);

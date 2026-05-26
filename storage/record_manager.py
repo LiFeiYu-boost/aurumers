@@ -1500,75 +1500,78 @@ def _row_to_chat_message(row: sqlite3.Row) -> ChatMessage:
     )
 
 
-def create_chat_session(session_id: str, client_id: str, title: str = "新对话") -> ChatSession:
+# 多租户隔离(2026-05-26):chat_sessions.client_id 列此后存放 **user_id**(登录用户 id)。
+# 所有 chat 按 user_id 严格隔离;A 租户拿 B 的 session_id 也查不到(下方 WHERE 双条件)。
+# 历史上按浏览器随机 client_id 存的会话,因与任何 user_id 都对不上,自动隐身(作废)。
+def create_chat_session(session_id: str, user_id: str, title: str = "新对话") -> ChatSession:
     init_storage()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with closing(_connect()) as connection:
         connection.execute(
             "INSERT INTO chat_sessions (id, client_id, title, created_at, updated_at, message_count, archived) "
             "VALUES (?, ?, ?, ?, ?, 0, 0)",
-            (session_id, client_id, title, now, now),
+            (session_id, user_id, title, now, now),
         )
         connection.commit()
     return ChatSession(
-        id=session_id, client_id=client_id, title=title,
+        id=session_id, client_id=user_id, title=title,
         created_at=now, updated_at=now, message_count=0, archived=False,
     )
 
 
-def list_chat_sessions(client_id: str, include_archived: bool = False) -> list[ChatSession]:
+def list_chat_sessions(user_id: str, include_archived: bool = False) -> list[ChatSession]:
     init_storage()
     with closing(_connect()) as connection:
         if include_archived:
             rows = connection.execute(
                 "SELECT * FROM chat_sessions WHERE client_id = ? ORDER BY updated_at DESC",
-                (client_id,),
+                (user_id,),
             ).fetchall()
         else:
             rows = connection.execute(
                 "SELECT * FROM chat_sessions WHERE client_id = ? AND archived = 0 ORDER BY updated_at DESC",
-                (client_id,),
+                (user_id,),
             ).fetchall()
     return [_row_to_session(row) for row in rows]
 
 
-def get_chat_session(session_id: str, client_id: str) -> ChatSession | None:
-    """Returns the session only if (id, client_id) match — guards IDOR."""
+def get_chat_session(session_id: str, user_id: str) -> ChatSession | None:
+    """Returns the session only if (id, user_id) match — guards cross-tenant IDOR."""
     init_storage()
     with closing(_connect()) as connection:
         row = connection.execute(
             "SELECT * FROM chat_sessions WHERE id = ? AND client_id = ?",
-            (session_id, client_id),
+            (session_id, user_id),
         ).fetchone()
     return _row_to_session(row) if row else None
 
 
-def archive_chat_session(session_id: str, client_id: str) -> bool:
+def archive_chat_session(session_id: str, user_id: str) -> bool:
     init_storage()
     with closing(_connect()) as connection:
         cursor = connection.execute(
             "UPDATE chat_sessions SET archived = 1, updated_at = ? WHERE id = ? AND client_id = ?",
-            (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), session_id, client_id),
+            (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), session_id, user_id),
         )
         connection.commit()
     return cursor.rowcount > 0
 
 
-def update_chat_session_title(session_id: str, client_id: str, title: str) -> bool:
+def update_chat_session_title(session_id: str, user_id: str, title: str) -> bool:
     init_storage()
     with closing(_connect()) as connection:
         cursor = connection.execute(
             "UPDATE chat_sessions SET title = ?, updated_at = ? WHERE id = ? AND client_id = ?",
-            (title[:64], datetime.now().strftime("%Y-%m-%d %H:%M:%S"), session_id, client_id),
+            (title[:64], datetime.now().strftime("%Y-%m-%d %H:%M:%S"), session_id, user_id),
         )
         connection.commit()
     return cursor.rowcount > 0
 
 
-def list_chat_messages(session_id: str, client_id: str, limit: int = 200) -> list[ChatMessage]:
-    """Returns messages for the session — only if client_id owns it."""
+def list_chat_messages(session_id: str, user_id: str, limit: int = 200) -> list[ChatMessage]:
+    """Returns messages for the session — only if user_id owns it."""
     init_storage()
-    if not get_chat_session(session_id, client_id):
+    if not get_chat_session(session_id, user_id):
         return []
     with closing(_connect()) as connection:
         # rowid is sqlite's monotonic insertion sequence — guarantees user/assistant
