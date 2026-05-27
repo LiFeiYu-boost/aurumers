@@ -1,4 +1,4 @@
-import { api, type HoldingsAdvice } from "../api/client";
+import { api, type HoldingsAdvice, type OutlookItem } from "../api/client";
 import { toast } from "../components/Toast";
 
 const CSS = `
@@ -28,6 +28,16 @@ const CSS = `
 .detail-toggle { margin-top: 12px; font-size: 14px; color: var(--c-accent, #b8860b); background: none; border: none; cursor: pointer; padding: 0; text-decoration: underline; }
 .detail-box { margin-top: 10px; padding: 12px 14px; background: var(--c-bg); border: 1px dashed var(--c-border); border-radius: 8px; font-size: 14px; line-height: 1.7; }
 .disclaimer { margin-top: 18px; font-size: 12px; color: var(--c-text-mute); line-height: 1.7; border-top: 1px solid var(--c-border); padding-top: 12px; }
+.outlook { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 6px; }
+@media (max-width: 640px) { .outlook { grid-template-columns: 1fr; } }
+.ocard { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-md); padding: 16px 18px; box-shadow: var(--shadow-sm); }
+.ocard .olabel { font-size: 13px; color: var(--c-text-soft); }
+.ocard .odir { font-size: 20px; font-weight: 700; margin: 6px 0 2px; }
+.ocard .odir.up { color: #16a34a; } .ocard .odir.down { color: #dc2626; }
+.ocard .ometric { font-size: 13px; color: var(--c-text-mute); line-height: 1.7; }
+.ocard .acc { font-weight: 600; color: var(--c-text); }
+.section-h { font-size: 15px; font-weight: 600; margin: 22px 0 4px; }
+.section-sub { font-size: 12px; color: var(--c-text-mute); margin-bottom: 4px; }
 `;
 
 export function renderHoldings(): HTMLElement {
@@ -38,8 +48,12 @@ export function renderHoldings(): HTMLElement {
     <aurumers-shell>
       <div class="holdings shell">
         <h1>持仓助手</h1>
-        <p class="lead">输入你的黄金持仓,Aurumers 会结合「未来约 1 个月趋势信号」给出方向参考。
-          本工具基于趋势模型,<strong>仅供参考、非投资建议</strong>。</p>
+        <p class="lead">基于多周期趋势模型,给出未来 1–3 个月的方向展望与持仓参考。
+          本工具<strong>仅供参考、非投资建议</strong>。</p>
+        <div class="section-h">多周期趋势展望</div>
+        <div class="section-sub">周期越长方向越可判断;括号内为该周期的历史样本外命中率(2010–2026)。</div>
+        <div class="outlook" id="outlook"><div class="ocard"><div class="ometric">加载中…</div></div></div>
+        <div class="section-h">持仓建议</div>
         <div class="panel">
           <div class="seg">
             <button data-mode="cost" class="on">成本价 × 克数</button>
@@ -101,7 +115,29 @@ export function renderHoldings(): HTMLElement {
     }
   });
 
+  // 多周期展望(进页面即加载)
+  api.signal.outlook()
+    .then((r) => renderOutlook(root.querySelector("#outlook")!, r.outlook))
+    .catch(() => {
+      const el = root.querySelector("#outlook");
+      if (el) el.innerHTML = `<div class="ocard"><div class="ometric">展望暂不可用</div></div>`;
+    });
+
   return root;
+}
+
+function renderOutlook(el: Element, items: OutlookItem[]) {
+  el.innerHTML = items.map((o) => {
+    const up = o.direction === "看多";
+    const acc = o.accuracy != null ? `${(o.accuracy * 100).toFixed(0)}%` : "—";
+    return `
+      <div class="ocard">
+        <div class="olabel">${o.label}</div>
+        <div class="odir ${up ? "up" : "down"}">${o.direction}</div>
+        <div class="ometric">上涨概率 ${(o.prob_up * 100).toFixed(0)}%</div>
+        <div class="ometric">历史命中 <span class="acc">${acc}</span>${o.skill_pp != null ? ` · 较猜涨 ${o.skill_pp >= 0 ? "+" : ""}${o.skill_pp}pp` : ""}</div>
+      </div>`;
+  }).join("");
 }
 
 function renderResult(el: Element, r: HoldingsAdvice, fmt: (n: number) => string) {

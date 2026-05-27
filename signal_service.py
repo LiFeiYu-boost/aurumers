@@ -34,21 +34,38 @@ def _get_bundle():
     return _bundle
 
 
+def _compute() -> tuple[dict, list]:
+    """一次特征计算,同时产出信号 + 多周期展望。"""
+    b = _get_bundle()
+    g = trend_signal.load_gold_sge(os.environ.get("SIGNAL_GOLD_CSV"))
+    m = trend_signal.load_macro(os.environ.get("SIGNAL_MACRO_DIR"))
+    df = trend_signal.build_features(g, m)
+    sig = trend_signal.compute_signal(df, b["models"], cot_net_z=_load_cot_z())
+    sig["trained_at"] = b.get("trained_at")
+    sig["train_span"] = b.get("train_span")
+    outlook = trend_signal.compute_outlook(df, b["models"], b.get("outlook_meta"))
+    return sig, outlook
+
+
+def _cached() -> tuple[dict, list]:
+    today = date.today().isoformat()
+    if _cache.get("day") == today and _cache.get("sig") is not None:
+        return _cache["sig"], _cache["outlook"]
+    sig, outlook = _compute()
+    _cache.update(day=today, sig=sig, outlook=outlook)
+    return sig, outlook
+
+
 def get_signal(force: bool = False) -> dict:
     """返回当日信号(当天缓存)。"""
-    today = date.today().isoformat()
-    if not force and _cache.get("day") == today and _cache.get("sig"):
-        return _cache["sig"]
-    sig = trend_signal.infer(
-        _get_bundle(),
-        gold_csv=os.environ.get("SIGNAL_GOLD_CSV"),
-        macro_csv_dir=os.environ.get("SIGNAL_MACRO_DIR"),
-        cot_net_z=_load_cot_z(),
-    )
-    sig["trained_at"] = _get_bundle().get("trained_at")
-    sig["train_span"] = _get_bundle().get("train_span")
-    _cache.update(day=today, sig=sig)
-    return sig
+    if force:
+        _cache.clear()
+    return _cached()[0]
+
+
+def get_outlook() -> list:
+    """返回当日多周期方向展望(1/2/3 个月,当天缓存)。"""
+    return _cached()[1]
 
 
 def _load_cot_z() -> float | None:

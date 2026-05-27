@@ -25,7 +25,10 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import HistGradientBoostingClassifier
 
-HORIZONS = (10, 20, 40)
+HORIZONS = (10, 20, 40)            # 持仓助手用的集成(Sharpe 驱动)
+OUTLOOK_HORIZONS = (30, 60, 90)    # 高准确率方向展望(1/2/3 个月)
+OUTLOOK_LABELS = {30: "未来约 1 个月", 60: "未来约 2 个月", 90: "未来约 3 个月"}
+ALL_HORIZONS = tuple(sorted(set(HORIZONS) | set(OUTLOOK_HORIZONS)))  # 训练全集
 TRADING_DAYS = 252
 OZ2G = 31.1035
 
@@ -124,17 +127,64 @@ def _new_model() -> HistGradientBoostingClassifier:
         l2_regularization=1.0, min_samples_leaf=40, random_state=42)
 
 
-def train_models(df: pd.DataFrame) -> dict[int, HistGradientBoostingClassifier]:
+def train_models(df: pd.DataFrame, horizons=ALL_HORIZONS) -> dict[int, HistGradientBoostingClassifier]:
     """对每个周期 H 训练一个模型(用全部有标签的历史)。"""
     c = df["Close"]
     models = {}
-    for H in HORIZONS:
+    for H in horizons:
         y = (c.shift(-H) / c - 1 > 0).astype(int)
         d = df.assign(_y=y).dropna(subset=FEATURES + ["_y"])
         mdl = _new_model()
         mdl.fit(d[FEATURES].values, d["_y"].values)
         models[H] = mdl
     return models
+
+
+def walk_forward_accuracy(df: pd.DataFrame, H: int, min_train: int = 1000,
+                          step: int = 63) -> dict:
+    """对周期 H 做 walk-forward,返回样本外命中率 + 基准率(诚实的历史准确率)。"""
+    c = df["Close"]
+    d = df.assign(_y=(c.shift(-H) / c - 1 > 0).astype(int)).dropna(subset=FEATURES + ["_y"])
+    X, y = d[FEATURES].values, d["_y"].values
+    n = len(d)
+    proba = np.full(n, np.nan)
+    s = min_train
+    while s < n:
+        e = min(s + step, n)
+        m = _new_model()
+        m.fit(X[:s], y[:s])
+        proba[s:e] = m.predict_proba(X[s:e])[:, 1]
+        s = e
+    mask = ~np.isnan(proba)
+    pred, truth = (proba[mask] > 0.5).astype(int), y[mask]
+    acc = float((pred == truth).mean())
+    up_rate = float(truth.mean())
+    naive = max(up_rate, 1 - up_rate)
+    return {"accuracy": round(acc, 4), "naive_acc": round(naive, 4),
+            "skill_pp": round((acc - naive) * 100, 1), "n_oos": int(mask.sum())}
+
+
+def compute_outlook(df: pd.DataFrame, models: dict[int, HistGradientBoostingClassifier],
+                    meta: dict | None = None) -> list[dict]:
+    """多周期方向展望(1/2/3 个月),含每档历史命中率。"""
+    latest = df.dropna(subset=FEATURES).iloc[-1:]
+    X = latest[FEATURES].values
+    meta = meta or {}
+    out = []
+    for H in OUTLOOK_HORIZONS:
+        if H not in models:
+            continue
+        p = float(models[H].predict_proba(X)[0, 1])
+        m = meta.get(str(H)) or meta.get(H) or {}
+        out.append({
+            "horizon_days": H,
+            "label": OUTLOOK_LABELS[H],
+            "direction": "看多" if p >= 0.5 else "看空",
+            "prob_up": round(p, 4),
+            "accuracy": m.get("accuracy"),       # 样本外历史命中率
+            "skill_pp": m.get("skill_pp"),        # 相对"猜涨"的真技能(pp)
+        })
+    return out
 
 
 def compute_signal(df: pd.DataFrame, models: dict[int, HistGradientBoostingClassifier],

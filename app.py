@@ -253,6 +253,21 @@ def read_trend_signal():
         return error_response("信号计算失败，请稍后再试", status_code=503)
 
 
+@app.get("/api/signal/outlook")
+def read_outlook():
+    """多周期方向展望(未来 1/2/3 个月),含各档历史命中率。"""
+    try:
+        return success_response({
+            "outlook": signal_service.get_outlook(),
+            "disclaimer": signal_service.DISCLAIMER,
+        })
+    except FileNotFoundError:
+        return error_response("信号模型尚未部署", status_code=503)
+    except Exception:
+        logger.exception("outlook failed")
+        return error_response("展望计算失败，请稍后再试", status_code=503)
+
+
 @app.post("/api/holdings/advice")
 async def holdings_advice(request: Request):
     """持仓助手:输入持仓(总价值 或 成本价×克数)→ 信号驱动的买卖建议。"""

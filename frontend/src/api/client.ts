@@ -108,6 +108,15 @@ export interface TrendSignal {
   disclaimer?: string;
 }
 
+export interface OutlookItem {
+  horizon_days: number;
+  label: string;
+  direction: string;
+  prob_up: number;
+  accuracy: number | null;
+  skill_pp: number | null;
+}
+
 export interface HoldingsAdvice {
   holdings: {
     grams: number;
@@ -158,6 +167,7 @@ export const api = {
   // 趋势信号 + 持仓助手
   signal: {
     latest: () => request<TrendSignal>("/api/signal/latest"),
+    outlook: () => request<{ outlook: OutlookItem[]; disclaimer: string }>("/api/signal/outlook"),
     advice: (body: { grams?: number; cost_per_g?: number; value_cny?: number }) =>
       request<HoldingsAdvice>("/api/holdings/advice", { method: "POST", body: JSON.stringify(body) }),
   },

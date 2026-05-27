@@ -29,7 +29,10 @@ import pandas as pd
 import sys
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-from chains.trend_signal import build_features, train_models, compute_signal, FEATURES  # noqa: E402
+from chains.trend_signal import (  # noqa: E402
+    build_features, train_models, compute_signal, compute_outlook,
+    walk_forward_accuracy, FEATURES, OUTLOOK_HORIZONS,
+)
 
 OZ2G = 31.1035
 OUT = ROOT / "models" / "trend_ensemble_v1.joblib"
@@ -90,16 +93,24 @@ def main():
     df = build_features(gold, macro)
     print(f"      金价 {gold.index.min().date()} → {gold.index.max().date()} ({len(gold)} 天)")
 
-    print("[2/3] 训练 H10/20/40 集成 ...")
+    print("[2/4] 训练全周期(10/20/40 集成 + 30/60/90 展望)...")
     models = train_models(df)
     sig = compute_signal(df, models)
 
-    print("[3/3] 打包 ...")
+    print("[3/4] walk-forward 计算各展望档历史命中率(较慢)...")
+    outlook_meta = {}
+    for H in OUTLOOK_HORIZONS:
+        outlook_meta[str(H)] = walk_forward_accuracy(df, H)
+        m = outlook_meta[str(H)]
+        print(f"      H={H}: 命中 {m['accuracy']*100:.1f}% | 真技能 {m['skill_pp']:+.1f}pp | n={m['n_oos']}")
+
+    print("[4/4] 打包 ...")
     OUT.parent.mkdir(exist_ok=True)
     bundle = {
         "models": models,
         "features": FEATURES,
-        "version": "trend_ensemble_h10_20_40_v1",
+        "outlook_meta": outlook_meta,
+        "version": "trend_v2_ensemble+outlook",
         "trained_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "train_span": [str(gold.index.min().date()), str(gold.index.max().date())],
         "train_rows": int(len(df.dropna(subset=FEATURES))),
@@ -107,8 +118,9 @@ def main():
     }
     joblib.dump(bundle, OUT)
     print(f"      已保存 {OUT} ({OUT.stat().st_size//1024} KB)")
-    print("\n当前信号(训练数据末日,自检用):")
-    print(json.dumps(sig, ensure_ascii=False, indent=2))
+    print("\n当前信号 + 多周期展望(自检):")
+    print(json.dumps({"signal": sig, "outlook": compute_outlook(df, models, outlook_meta)},
+                     ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":
