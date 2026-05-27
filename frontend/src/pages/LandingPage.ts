@@ -203,8 +203,8 @@ export function renderLanding(): HTMLElement {
           <aurumers-orb></aurumers-orb>
           <div class="hero-inner">
             <div data-anim="0">
-              <h1>金价会涨还是跌？<br/>用<span class="gold">数据</span>说话。</h1>
-              <p class="lead">Aurumers 每天自动分析黄金行情和新闻，告诉你金价现在是什么状况、未来大概率涨还是跌；而且把过去每一次判断准不准都公开出来——不吹牛、能查证。</p>
+              <h1>金价会涨还是跌？<br/>用<span class="gold">数据</span>研判。</h1>
+              <p class="lead">Aurumers 每日自动分析黄金行情与新闻，研判当前金价状况与未来趋势方向；并将历次判断的准确率全程公开，可追溯、可验证。</p>
               <div class="hero-cta">
                 <a href="/app" class="btn btn-primary" data-route>进入应用</a>
                 <a href="/app/chat" class="btn btn-ghost" data-route>和 AI 助手聊聊金价</a>
@@ -229,32 +229,32 @@ export function renderLanding(): HTMLElement {
             <div class="icon">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             </div>
-            <h3>两边行情，互相印证</h3>
-            <p>同时参考上海黄金交易所和国际黄金期货的收盘价，互相对照；一个来源出问题，另一个自动顶上，数据更靠谱。</p>
+            <h3>双源行情，互相印证</h3>
+            <p>同时采用上海黄金交易所与国际黄金期货的收盘价互相对照；单一来源异常时自动切换，确保数据可靠。</p>
           </div>
           <div class="vc" data-anim="4">
             <div class="icon">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </div>
-            <h3>每天自动更新，不用盯盘</h3>
-            <p>每天固定时间自动生成最新判断：今天金价什么状况、明天大概率往哪走，打开就能看，省心。</p>
+            <h3>每日定时更新，无需盯盘</h3>
+            <p>每日定时自动生成最新判断：当日金价状况与次日趋势方向，随时可查。</p>
           </div>
           <div class="vc" data-anim="5">
             <div class="icon">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-6"/><path d="M6 20V10"/><path d="M18 20V4"/></svg>
             </div>
-            <h3>猜准猜错，全部公开</h3>
-            <p>每条预测第二天都会和真实金价对一遍，准不准如实记录、谁都能查；我们到底有没有用，让数据说话，不藏着掖着。</p>
+            <h3>命中与否，公开透明</h3>
+            <p>每条预测次日都与真实金价比对，命中与否如实记录、公开可查；是否真正有效，交由数据检验。</p>
           </div>
         </section>
 
         <section class="flow">
-          <span class="section-eyebrow">它是怎么工作的</span>
-          <h2 class="h-display h-display-md">从收集行情到给你结论，全程自动。</h2>
+          <span class="section-eyebrow">运作方式</span>
+          <h2 class="h-display h-display-md">从采集行情到输出结论，全程自动。</h2>
           <div class="grid">
             <div class="step" data-anim="3">
-              <h4>收集</h4>
-              <p>每隔半小时自动抓取最新金价和黄金新闻，多个来源交叉核对、去伪存真。</p>
+              <h4>采集</h4>
+              <p>每半小时自动抓取最新金价与黄金新闻，多源交叉核对、去伪存真。</p>
             </div>
             <div class="step" data-anim="4">
               <h4>分析</h4>
@@ -266,13 +266,13 @@ export function renderLanding(): HTMLElement {
             </div>
             <div class="step" data-anim="6">
               <h4>提醒</h4>
-              <p>支持邮件、飞书、企业微信等方式，有新判断第一时间通知你。</p>
+              <p>支持邮件、飞书、企业微信等方式，新判断生成后第一时间通知。</p>
             </div>
           </div>
         </section>
 
         <section class="cta-band" data-anim="6">
-          <h2>每一次判断，都看得见、对得上、不藏着。</h2>
+          <h2>每一次判断，可追溯、可验证、公开透明。</h2>
           <a href="/app" data-route>进入看板 →</a>
         </section>
       </div>
@@ -294,7 +294,7 @@ async function hydrateHero(root: HTMLElement) {
     if (!prediction) {
       directionEl.textContent = "—";
       metaEl.textContent = "等待今早首次更新";
-      summaryEl.textContent = "正在收集数据，稍后就有结果。";
+      summaryEl.textContent = "正在采集数据，稍后生成结果。";
       return;
     }
     directionEl.textContent = prediction.tomorrow_direction;

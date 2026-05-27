@@ -185,7 +185,7 @@ export function renderDashboard(): HTMLElement {
           <div class="left">
             <span class="section-eyebrow">实时行情与每日预测</span>
             <h1>每一次判断，<br/>都记录在案、可查证。</h1>
-            <p>每隔半小时自动盯盘，每天凌晨汇总成一份正式判断；猜对猜错都留底，方便你回头核对。</p>
+            <p>每半小时自动监测，每日凌晨汇总为一份正式判断；命中与否均存档，便于回溯核对。</p>
             <div class="actions">
               <button id="run-btn" class="btn btn-primary" data-state="">
                 <span class="spinner"></span>

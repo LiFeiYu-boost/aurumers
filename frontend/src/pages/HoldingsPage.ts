@@ -136,7 +136,7 @@ function renderOutlook(el: Element, items: OutlookItem[]) {
         <div class="odir ${up ? "up" : "down"}">${o.direction}</div>
         <div class="ometric">上涨概率 ${(o.prob_up * 100).toFixed(0)}%</div>
         <div class="ometric">历史命中 <span class="acc">${acc}</span></div>
-        ${o.skill_pp != null ? `<div class="ometric" style="font-size:12px;">比“一直猜涨”多准 ${o.skill_pp} 个百分点</div>` : ""}
+        ${o.skill_pp != null ? `<div class="ometric" style="font-size:12px;">较“始终看涨”基准高 ${o.skill_pp} 个百分点</div>` : ""}
       </div>`;
   }).join("");
 }

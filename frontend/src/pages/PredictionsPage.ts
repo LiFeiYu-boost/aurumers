@@ -249,8 +249,8 @@ export function renderPredictions(): HTMLElement {
           <div class="panel">
             <aurumers-section-header
               eyebrow="影响金价的因素"
-              titleText="今天的判断参考了什么"
-              desc="AI 主要看这几个客观指标；下方折线是近 30 天的市场背景。"
+              titleText="本次判断的主要依据"
+              desc="AI 主要参考以下客观指标；下方折线为近 30 天市场背景。"
             ></aurumers-section-header>
             <div class="signal-radar" id="signal-radar"></div>
           </div>
@@ -258,11 +258,11 @@ export function renderPredictions(): HTMLElement {
 
         <section class="section row" data-anim="2">
           <div class="panel">
-            <aurumers-section-header eyebrow="把握 vs 实际" titleText="说的“把握”靠不靠谱" desc="点越贴近对角线，说明“几成把握”就真有几成准——不虚标。"></aurumers-section-header>
+            <aurumers-section-header eyebrow="把握 vs 实际" titleText="把握程度是否可信" desc="点越贴近对角线，标示的把握程度越接近实际命中率。"></aurumers-section-header>
             <div class="scatter" id="scatter"></div>
           </div>
           <div class="panel">
-            <aurumers-section-header eyebrow="近 5 周" titleText="每天猜中了吗"></aurumers-section-header>
+            <aurumers-section-header eyebrow="近 5 周" titleText="每日命中情况"></aurumers-section-header>
             <div class="calendar" id="calendar"></div>
           </div>
         </section>
@@ -368,7 +368,7 @@ function renderHero(root: HTMLElement, prediction: DailyPrediction | null, accur
     if (dir) dir.textContent = "—";
     if (conf) conf.textContent = "—";
     if (meta) meta.innerHTML = "";
-    if (reason) reason.textContent = "正在收集数据，每天凌晨自动生成。";
+    if (reason) reason.textContent = "正在采集数据，每日凌晨自动生成。";
     if (calib) calib.textContent = "暂无说明";
     return;
   }
@@ -395,12 +395,12 @@ function renderHero(root: HTMLElement, prediction: DailyPrediction | null, accur
   if (comexEl) comexEl.textContent = formatNumber(prediction.today_close_comex);
   if (spreadEl) {
     const tag = ({
-      both: "两边都有",
+      both: "双源齐备",
       sge_only: "仅上海金可用",
       comex_only: "仅国际金可用",
-      neither: "暂时缺失",
+      neither: "暂缺",
     } as Record<string, string>)[prediction.today_close_source] || prediction.today_close_source;
-    spreadEl.textContent = `数据来源 · ${tag}（两边单位不同，不能直接相减）`;
+    spreadEl.textContent = `数据来源 · ${tag}（两者单位不同，不可直接相减）`;
   }
 }
 

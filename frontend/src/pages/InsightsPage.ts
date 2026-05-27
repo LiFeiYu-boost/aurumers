@@ -354,12 +354,12 @@ export function renderInsights(): HTMLElement {
     <aurumers-shell>
       <div class="ins shell">
         <span class="section-eyebrow" data-anim="0">洞察</span>
-        <h1 data-anim="0">准不准，哪里容易错</h1>
-        <p class="lead" data-anim="1">看看我们在不同时间段的整体准确率、不同方向上的偏差，以及最近比较容易出错的情况。数据来自每天自动复盘的结果。</p>
+        <h1 data-anim="0">命中表现与误判分析</h1>
+        <p class="lead" data-anim="1">展示不同时间段的整体准确率、各方向的偏差，以及近期的误判模式。数据来自每日自动复盘。</p>
 
         <section class="vs-baseline" data-anim="2" id="vs-baseline">
           <div class="vs-baseline-head">
-            <span class="lbl">对比“最笨的猜法”</span>
+            <span class="lbl">对比简单基准</span>
             <span class="note" id="vs-baseline-note">—</span>
             <label class="backtest-toggle" id="backtest-toggle" title="把历史回放数据也算进来（没有当时的新闻，准度天然偏低）">
               <input type="checkbox" id="backtest-toggle-input" />
@@ -403,7 +403,7 @@ export function renderInsights(): HTMLElement {
             <aurumers-section-header
               eyebrow="进阶指标 · 可略过"
               titleText="概率预测的质量"
-              desc="给想深入了解的人：几个衡量“概率报得准不准”的专业指标，数值越低越好。普通用户看上面的命中率就够了。近 90 天。"
+              desc="供进阶查看：衡量“概率是否准确”的几项专业指标，数值越低越好；普通用户参考上方命中率即可。近 90 天。"
             ></aurumers-section-header>
             <div class="phase2-cards" id="phase2-cards"></div>
             <div class="raw-vs-cal" id="raw-vs-cal" hidden>
@@ -444,7 +444,7 @@ export function renderInsights(): HTMLElement {
 
         <section class="section" data-anim="6">
           <div class="panel">
-            <aurumers-section-header eyebrow="自我复盘" titleText="近期容易出错的情况 + AI 点评"></aurumers-section-header>
+            <aurumers-section-header eyebrow="自我复盘" titleText="近期误判模式 + AI 点评"></aurumers-section-header>
             <div class="misses" id="ins-misses">暂无记录</div>
             <div class="timeline" id="ins-timeline"></div>
           </div>
@@ -523,16 +523,16 @@ function fmtNum(value: number | null, decimals: number, fallback = "—"): strin
 function brierTone(value: number | null): { cls: string; hint: string } {
   if (value === null) return { cls: "muted", hint: "样本不足" };
   // random guess on 3-class is ~0.667; ideal 0; v1 baseline ~0.78
-  if (value <= 0.55) return { cls: "good", hint: "比随便猜好" };
-  if (value >= 0.7) return { cls: "bad", hint: "不如随便猜" };
-  return { cls: "muted", hint: "和随便猜差不多" };
+  if (value <= 0.55) return { cls: "good", hint: "优于随机" };
+  if (value >= 0.7) return { cls: "bad", hint: "劣于随机" };
+  return { cls: "muted", hint: "接近随机" };
 }
 
 function eceTone(value: number | null): { cls: string; hint: string } {
   if (value === null) return { cls: "muted", hint: "样本不足" };
-  if (value <= 0.10) return { cls: "good", hint: "概率很靠谱" };
-  if (value >= 0.20) return { cls: "bad", hint: "概率偏差大" };
-  return { cls: "muted", hint: "概率一般" };
+  if (value <= 0.10) return { cls: "good", hint: "校准良好" };
+  if (value >= 0.20) return { cls: "bad", hint: "偏差较大" };
+  return { cls: "muted", hint: "校准一般" };
 }
 
 function logLossTone(value: number | null): { cls: string; hint: string } {
@@ -558,7 +558,7 @@ function renderPhase2Metrics(root: HTMLElement, metrics: AccuracyMetricsV2) {
         <span class="pill ${brier.cls}">${brier.hint}</span>
       </div>
       <div class="value">${fmtNum(metrics.brier_multiclass, 3)}</div>
-      <div class="desc">越低越好；随便猜≈0.667，满分 0。${rangeText}</div>
+      <div class="desc">越低越好；随机猜测≈0.667，满分 0。${rangeText}</div>
     </div>
     <div class="card">
       <div class="lbl-row">
@@ -574,7 +574,7 @@ function renderPhase2Metrics(root: HTMLElement, metrics: AccuracyMetricsV2) {
         <span class="pill ${ece.cls}">${ece.hint}</span>
       </div>
       <div class="value">${fmtNum(metrics.ece, 3)}</div>
-      <div class="desc">报的概率和实际差多少，越小越好。${rangeText}</div>
+      <div class="desc">概率与实际命中的偏差，越小越好。${rangeText}</div>
     </div>
   `;
 
@@ -896,7 +896,7 @@ function renderVsBaseline(root: HTMLElement, accuracy: AccuracySnapshot) {
   };
   const cells: Cell[] = [
     { who: "Aurumers", pct: accuracy.overall_accuracy ?? null, isAurumers: true },
-    { who: "跟昨天一样", pct: accuracy.baseline_persistence_accuracy, base: accuracy.overall_accuracy ?? null },
+    { who: "延续昨日", pct: accuracy.baseline_persistence_accuracy, base: accuracy.overall_accuracy ?? null },
     { who: "5日均线", pct: accuracy.baseline_ma_accuracy, base: accuracy.overall_accuracy ?? null },
   ];
 
@@ -918,7 +918,7 @@ function renderVsBaseline(root: HTMLElement, accuracy: AccuracySnapshot) {
     } else if (!c.isAurumers && (c.pct === null || c.pct === undefined)) {
       deltaHtml = `<div class="delta">暂无对照样本</div>`;
     } else if (c.isAurumers) {
-      deltaHtml = `<div class="delta">我们的整体命中率</div>`;
+      deltaHtml = `<div class="delta">模型整体命中率</div>`;
     }
 
     return `
