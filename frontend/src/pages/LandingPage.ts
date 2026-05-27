@@ -254,7 +254,7 @@ export function renderLanding(): HTMLElement {
           <div class="grid">
             <div class="step" data-anim="3">
               <h4>采集</h4>
-              <p>每半小时自动抓取最新金价与黄金新闻，多源交叉核对、去伪存真。</p>
+              <p>每半小时自动抓取最新金价与黄金新闻，多个来源交叉核对、去伪存真。</p>
             </div>
             <div class="step" data-anim="4">
               <h4>分析</h4>

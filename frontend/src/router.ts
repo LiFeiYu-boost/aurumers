@@ -68,7 +68,7 @@ class Router {
     }
     this.currentEl = el;
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
-    document.title = el.dataset.title ? `${el.dataset.title} · Aurumers` : "Aurumers · 黄金市场结构化预测";
+    document.title = el.dataset.title ? `${el.dataset.title} · Aurumers` : "Aurumers · 黄金涨跌趋势预测";
   }
 }
 

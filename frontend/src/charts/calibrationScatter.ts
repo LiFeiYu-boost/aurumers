@@ -58,7 +58,7 @@ export function renderCalibrationScatter(el: HTMLElement, buckets: CalibrationBu
     .attr("text-anchor", "middle")
     .attr("fill", muted)
     .attr("font-size", "11")
-    .text("预测置信度");
+    .text("把握程度");
   root.append("text")
     .attr("x", -innerH / 2)
     .attr("y", -28)

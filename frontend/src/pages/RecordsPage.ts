@@ -136,7 +136,7 @@ export function renderRecords(): HTMLElement {
             <ul id="drawer-news"></ul>
           </div>
           <div class="detail-section">
-            <h3>原始模型输出</h3>
+            <h3>完整分析原文</h3>
             <pre class="raw" id="drawer-raw">—</pre>
           </div>
           <div class="detail-section" style="display: flex; justify-content: flex-end;">

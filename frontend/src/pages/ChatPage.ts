@@ -138,7 +138,7 @@ export function renderChat(): HTMLElement {
             <button class="mobile-toggle" id="mobile-toggle">📋 历史</button>
           </div>
           <div class="banner">
-            ✨ Hermes 是 Aurumers 的对话助手，只聊黄金行情和网站使用；不会触碰代码 / 部署 / 服务器，也无法执行任何操作。
+            ✨ Hermes 是 Aurumers 的 AI 助手，可解答黄金行情与本站使用相关的问题。
           </div>
           <div class="thread" id="thread"></div>
           <aurumers-chat-input id="chat-input"></aurumers-chat-input>

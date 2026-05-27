@@ -121,7 +121,7 @@ export class ChatInput extends LitElement {
         </button>
       </div>
       <div class="meta">
-        <span>Hermes 只能聊黄金与网站使用，不会触碰代码 / 部署 / 服务器</span>
+        <span>Hermes 仅解答黄金行情与本站使用相关问题</span>
         <span class=${overflowed ? "warn" : ""}>${this.charCount} / 4000</span>
       </div>
     `;
