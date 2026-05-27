@@ -183,9 +183,9 @@ export function renderDashboard(): HTMLElement {
       <div class="dash shell">
         <section class="dash-hero" data-anim="0">
           <div class="left">
-            <span class="section-eyebrow">实时与每日预测</span>
-            <h1>把每一个判断<br/>留痕到数据库。</h1>
-            <p>30 分钟自动分析维持监控密度，02:50 北京时间凝练成一份正式预测，错对都会留下凭据。</p>
+            <span class="section-eyebrow">实时行情与每日预测</span>
+            <h1>每一次判断，<br/>都记录在案、可查证。</h1>
+            <p>每隔半小时自动盯盘，每天凌晨汇总成一份正式判断；猜对猜错都留底，方便你回头核对。</p>
             <div class="actions">
               <button id="run-btn" class="btn btn-primary" data-state="">
                 <span class="spinner"></span>
@@ -193,7 +193,7 @@ export function renderDashboard(): HTMLElement {
                 <span data-label>立即跑一次分析</span>
               </button>
               <button id="daily-btn" class="btn btn-ghost">
-                <span data-label>触发今日预测</span>
+                <span data-label>生成今日预测</span>
               </button>
               <a href="/app/predictions" class="btn btn-ghost" data-route>预测中心</a>
             </div>
@@ -256,7 +256,7 @@ export function renderDashboard(): HTMLElement {
             </div>
           </div>
           <div class="panel">
-            <aurumers-section-header eyebrow="今日预测" titleText="02:50 调度结果" desc="每日 02:50 北京时间自动产出，未到点显示最近一次。"></aurumers-section-header>
+            <aurumers-section-header eyebrow="今日预测" titleText="今日预测结果" desc="每天凌晨自动生成；还没到点就显示最近一次。"></aurumers-section-header>
             <div id="daily-card">等待数据…</div>
           </div>
         </section>
@@ -363,7 +363,7 @@ function renderHero(root: HTMLElement, record: AnalysisRecord | null | undefined
       const stamp = price.data_timestamp ? `（截至 ${price.data_timestamp}）` : "";
       heroMarket.textContent = `周末/休市 · 上次收盘 ${stamp}`;
     } else if (price.comex_open === true) {
-      heroMarket.textContent = `${price.data_label || "实时"} · COMEX 开盘中`;
+      heroMarket.textContent = `${price.data_label || "实时"} · 国际金市开盘中`;
     } else {
       heroMarket.textContent = price.data_label || "";
     }
@@ -466,12 +466,12 @@ function renderDailyCard(root: HTMLElement, prediction: DailyPrediction | null) 
   host.innerHTML = `
     <div class="detail-meta" style="margin-top:0;">
       <aurumers-chip label="${escapeHtml(prediction.tomorrow_direction)}"></aurumers-chip>
-      <span class="muted">置信 ${formatPercent(prediction.tomorrow_confidence)}</span>
+      <span class="muted">把握 ${formatPercent(prediction.tomorrow_confidence)}</span>
       ${status}
     </div>
     <div class="detail-section">
-      <h3>今日定性</h3>
-      <div class="detail-summary">${escapeHtml(prediction.today_direction)} · SGE ${formatNumber(prediction.today_close_sge)} · COMEX ${formatNumber(prediction.today_close_comex)}</div>
+      <h3>今日金价情况</h3>
+      <div class="detail-summary">${escapeHtml(prediction.today_direction)} · 上海金 ${formatNumber(prediction.today_close_sge)} · 国际金 ${formatNumber(prediction.today_close_comex)}</div>
     </div>
     <div class="detail-section">
       <h3>明日预测理由</h3>
@@ -482,7 +482,7 @@ function renderDailyCard(root: HTMLElement, prediction: DailyPrediction | null) 
       <div class="detail-summary">${escapeHtml(prediction.tomorrow_advice || "—")}</div>
     </div>
     <div class="detail-section">
-      <h3>校准说明</h3>
+      <h3>可靠性说明</h3>
       <div class="detail-summary muted">${escapeHtml(chunkText(prediction.calibration_note, 280))}</div>
     </div>
   `;

@@ -97,11 +97,11 @@ const CSS = `
 `;
 
 const CHANNEL_META: Record<string, { label: string; key: string; help: string }> = {
-  webhook: { label: "Webhook", key: "WEBHOOK_URLS", help: "POST 到任意你给的 URL（多条逗号分隔）" },
-  telegram: { label: "Telegram", key: "TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID", help: "BotFather 创建机器人后填 token 与 chat id" },
-  feishu: { label: "飞书 Lark", key: "FEISHU_WEBHOOK_URL", help: "群机器人 webhook 地址" },
-  wecom: { label: "企业微信", key: "WECOM_KEY", help: "群机器人 key（webhook URL 末段 key 参数）" },
-  email: { label: "邮件 SMTP", key: "EMAIL_SMTP_*", help: "host / port / user / pass / from / to 五件套" },
+  webhook: { label: "自定义推送", key: "WEBHOOK_URLS", help: "推送到你指定的网址" },
+  telegram: { label: "Telegram", key: "TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID", help: "通过 Telegram 机器人接收" },
+  feishu: { label: "飞书", key: "FEISHU_WEBHOOK_URL", help: "推送到飞书群" },
+  wecom: { label: "企业微信", key: "WECOM_KEY", help: "推送到企业微信群" },
+  email: { label: "邮件", key: "EMAIL_SMTP_*", help: "通过邮件接收" },
 };
 
 export function renderSettings(): HTMLElement {
@@ -113,7 +113,7 @@ export function renderSettings(): HTMLElement {
       <div class="settings shell">
         <span class="section-eyebrow" data-anim="0">设置</span>
         <h1 data-anim="0">个性化与推送</h1>
-        <p class="lead" data-anim="1">主题切换即时生效，推送通道由后端 .env 控制；UI 显示哪些通道已配置，未配置时给出占位与对应的环境变量名。</p>
+        <p class="lead" data-anim="1">在这里切换外观主题；下方显示各消息推送方式是否已开启（由管理员在服务器端统一配置）。</p>
 
         <section class="section" data-anim="2">
           <div class="panel">
@@ -148,10 +148,10 @@ export function renderSettings(): HTMLElement {
 
         <section class="section" data-anim="4">
           <div class="panel">
-            <aurumers-section-header eyebrow="消息推送" titleText="通道接入状态" desc="未配置即灰，配置完成且后端读取后变绿。"></aurumers-section-header>
+            <aurumers-section-header eyebrow="消息推送" titleText="推送方式状态" desc="灰色表示未开启，绿色表示已开启。"></aurumers-section-header>
             <div class="channels" id="channels"></div>
             <div class="notice">
-              <strong>如何启用：</strong>把对应的环境变量写入服务器 <code>/opt/aurumers/.env</code>，重启 <code>systemctl restart aurumers</code> 即可生效；测试推送需要将 <code>ALLOW_TEST_NOTIFY=1</code> 与 <code>ADMIN_TOKEN=...</code> 同时配上。
+              <strong>说明：</strong>消息推送由管理员在服务器端统一开启，普通用户无需设置。如需开通某种推送，请联系管理员。
             </div>
           </div>
         </section>
@@ -227,9 +227,9 @@ async function loadChannels(root: HTMLElement) {
       div.innerHTML = `
         <div>
           <div class="channel-name">${meta.label}</div>
-          <div class="channel-meta">${meta.help} · 环境变量：<code style="font-family:var(--font-mono);font-size:11px;">${meta.key}</code></div>
+          <div class="channel-meta">${meta.help}</div>
         </div>
-        <span class="channel-status">${isOn ? "已配置" : "未配置"}</span>
+        <span class="channel-status">${isOn ? "已开启" : "未开启"}</span>
       `;
       host.appendChild(div);
     }

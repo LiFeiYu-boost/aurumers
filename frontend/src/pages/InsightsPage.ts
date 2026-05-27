@@ -354,23 +354,22 @@ export function renderInsights(): HTMLElement {
     <aurumers-shell>
       <div class="ins shell">
         <span class="section-eyebrow" data-anim="0">洞察</span>
-        <h1 data-anim="0">命中率与失误模式</h1>
-        <p class="lead" data-anim="1">查看模型在不同时间窗的总命中率、按方向的偏差，以及最近被识别出的失误模式。所有数据来自系统每日 03:10 自动校验的结果。</p>
+        <h1 data-anim="0">准不准，哪里容易错</h1>
+        <p class="lead" data-anim="1">看看我们在不同时间段的整体准确率、不同方向上的偏差，以及最近比较容易出错的情况。数据来自每天自动复盘的结果。</p>
 
         <section class="vs-baseline" data-anim="2" id="vs-baseline">
           <div class="vs-baseline-head">
-            <span class="lbl">vs 基线</span>
+            <span class="lbl">对比“最笨的猜法”</span>
             <span class="note" id="vs-baseline-note">—</span>
-            <label class="backtest-toggle" id="backtest-toggle" title="纳入历史回测数据（无当日新闻语境，命中信号弱于 live）">
+            <label class="backtest-toggle" id="backtest-toggle" title="把历史回放数据也算进来（没有当时的新闻，准度天然偏低）">
               <input type="checkbox" id="backtest-toggle-input" />
-              <span>含 backtest</span>
+              <span>含历史回放</span>
             </label>
           </div>
           <div class="vs-row" id="vs-baseline-row"></div>
           <div class="vs-baseline-foot" id="vs-baseline-foot">
-            当前指标已纳入 backtest_no_news 行（历史回测重放，缺当日新闻语境）。
-            其命中率结构性低于 live —— 用于扩大样本量看 baseline 对照，
-            不代表 live pipeline 的真实表现。
+            已把历史回放数据算进来（那时没有当天的新闻，准度天然偏低），
+            仅用于扩大样本做对照，不代表实际表现。
           </div>
         </section>
 
@@ -383,7 +382,7 @@ export function renderInsights(): HTMLElement {
           <div class="card">
             <div class="label">已验证 / 总数</div>
             <div class="value" id="ins-verified">—</div>
-            <div class="desc" id="ins-verified-desc">最近窗口的覆盖度</div>
+            <div class="desc" id="ins-verified-desc">最近这段已核对多少条</div>
           </div>
           <div class="card">
             <div class="label">连续命中</div>
@@ -402,19 +401,19 @@ export function renderInsights(): HTMLElement {
         <section class="section" data-anim="5">
           <div class="panel">
             <aurumers-section-header
-              eyebrow="概率指标 · 主目标"
-              titleText="Brier · log-loss · ECE"
-              desc="模型质量的核心三指标；目标是把这三项压下来，方向命中率次之。窗口 90 天。"
+              eyebrow="进阶指标 · 可略过"
+              titleText="概率预测的质量"
+              desc="给想深入了解的人：几个衡量“概率报得准不准”的专业指标，数值越低越好。普通用户看上面的命中率就够了。近 90 天。"
             ></aurumers-section-header>
             <div class="phase2-cards" id="phase2-cards"></div>
             <div class="raw-vs-cal" id="raw-vs-cal" hidden>
-              <div class="raw-vs-cal-title">校准前 vs 校准后</div>
+              <div class="raw-vs-cal-title">调整前 vs 调整后</div>
               <table class="rvs-table">
                 <thead>
                   <tr>
                     <th></th>
-                    <th>校准前（raw）</th>
-                    <th>校准后</th>
+                    <th>调整前</th>
+                    <th>调整后</th>
                     <th>Δ</th>
                   </tr>
                 </thead>
@@ -422,7 +421,7 @@ export function renderInsights(): HTMLElement {
               </table>
             </div>
             <table class="regime-table" id="regime-table">
-              <thead><tr><th>Regime</th><th>样本</th><th>命中率</th><th>Brier</th></tr></thead>
+              <thead><tr><th>行情类型</th><th>样本</th><th>命中率</th><th>概率评分</th></tr></thead>
               <tbody></tbody>
             </table>
             <div class="reliability-wrap">
@@ -435,8 +434,8 @@ export function renderInsights(): HTMLElement {
           <div class="panel">
             <aurumers-section-header
               eyebrow="系统状态"
-              titleText="Hermes skill 自演化审计"
-              desc="每日 04:00 系统 cron 比对当前 skill 与昨日快照；空文件 = 当天没改。30 天 0 改 → self-evolve 没在跑。"
+              titleText="模型更新记录"
+              desc="记录模型最近有没有自动调整；当天没有变化就是空白。"
             ></aurumers-section-header>
             <div class="skill-status" id="skill-status"></div>
             <div class="skill-recent" id="skill-recent"></div>
@@ -445,8 +444,8 @@ export function renderInsights(): HTMLElement {
 
         <section class="section" data-anim="6">
           <div class="panel">
-            <aurumers-section-header eyebrow="模型自我反思" titleText="近期失误模式 + Hermes 评论"></aurumers-section-header>
-            <div class="misses" id="ins-misses">暂无失误模式</div>
+            <aurumers-section-header eyebrow="自我复盘" titleText="近期容易出错的情况 + AI 点评"></aurumers-section-header>
+            <div class="misses" id="ins-misses">暂无记录</div>
             <div class="timeline" id="ins-timeline"></div>
           </div>
         </section>
@@ -524,23 +523,23 @@ function fmtNum(value: number | null, decimals: number, fallback = "—"): strin
 function brierTone(value: number | null): { cls: string; hint: string } {
   if (value === null) return { cls: "muted", hint: "样本不足" };
   // random guess on 3-class is ~0.667; ideal 0; v1 baseline ~0.78
-  if (value <= 0.55) return { cls: "good", hint: "优于均匀猜测" };
-  if (value >= 0.7) return { cls: "bad", hint: "高于随机猜测" };
-  return { cls: "muted", hint: "接近均匀基线" };
+  if (value <= 0.55) return { cls: "good", hint: "比随便猜好" };
+  if (value >= 0.7) return { cls: "bad", hint: "不如随便猜" };
+  return { cls: "muted", hint: "和随便猜差不多" };
 }
 
 function eceTone(value: number | null): { cls: string; hint: string } {
   if (value === null) return { cls: "muted", hint: "样本不足" };
-  if (value <= 0.10) return { cls: "good", hint: "校准良好" };
-  if (value >= 0.20) return { cls: "bad", hint: "校准偏差较大" };
-  return { cls: "muted", hint: "中等校准" };
+  if (value <= 0.10) return { cls: "good", hint: "概率很靠谱" };
+  if (value >= 0.20) return { cls: "bad", hint: "概率偏差大" };
+  return { cls: "muted", hint: "概率一般" };
 }
 
 function logLossTone(value: number | null): { cls: string; hint: string } {
   if (value === null) return { cls: "muted", hint: "样本不足" };
-  if (value <= 0.85) return { cls: "good", hint: "对数损失低" };
-  if (value >= 1.20) return { cls: "bad", hint: "对数损失高" };
-  return { cls: "muted", hint: "中等对数损失" };
+  if (value <= 0.85) return { cls: "good", hint: "较低（好）" };
+  if (value >= 1.20) return { cls: "bad", hint: "较高（差）" };
+  return { cls: "muted", hint: "中等" };
 }
 
 function renderPhase2Metrics(root: HTMLElement, metrics: AccuracyMetricsV2) {
@@ -555,27 +554,27 @@ function renderPhase2Metrics(root: HTMLElement, metrics: AccuracyMetricsV2) {
   cards.innerHTML = `
     <div class="card">
       <div class="lbl-row">
-        <span class="label">Brier (multiclass)</span>
+        <span class="label">概率准度 (Brier)</span>
         <span class="pill ${brier.cls}">${brier.hint}</span>
       </div>
       <div class="value">${fmtNum(metrics.brier_multiclass, 3)}</div>
-      <div class="desc">越低越好；随机猜≈0.667；理想 0。${rangeText}</div>
+      <div class="desc">越低越好；随便猜≈0.667，满分 0。${rangeText}</div>
     </div>
     <div class="card">
       <div class="lbl-row">
-        <span class="label">Log loss</span>
+        <span class="label">对数损失 (Log loss)</span>
         <span class="pill ${ll.cls}">${ll.hint}</span>
       </div>
       <div class="value">${fmtNum(metrics.log_loss, 3)}</div>
-      <div class="desc">3 类对数损失，越低越好。${rangeText}</div>
+      <div class="desc">另一种概率评分，越低越好。${rangeText}</div>
     </div>
     <div class="card">
       <div class="lbl-row">
-        <span class="label">ECE</span>
+        <span class="label">概率偏差 (ECE)</span>
         <span class="pill ${ece.cls}">${ece.hint}</span>
       </div>
       <div class="value">${fmtNum(metrics.ece, 3)}</div>
-      <div class="desc">期望校准误差；目标 ≤ 0.10。${rangeText}</div>
+      <div class="desc">报的概率和实际差多少，越小越好。${rangeText}</div>
     </div>
   `;
 
@@ -591,9 +590,13 @@ function renderRegimeTable(root: HTMLElement, metrics: AccuracyMetricsV2) {
   for (const k of Object.keys(metrics.accuracy_by_regime || {})) allKeys.add(k);
   for (const k of Object.keys(metrics.brier_by_regime || {})) allKeys.add(k);
   if (allKeys.size === 0) {
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--c-text-mute);padding:18px;">尚无 regime 分层数据</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--c-text-mute);padding:18px;">暂无分行情数据</td></tr>`;
     return;
   }
+  const regimeLabel: Record<string, string> = {
+    bull: "牛市（上涨）", bear: "熊市（下跌）", choppy: "震荡盘整",
+    transition: "转折期", unknown: "未知", unlabeled: "未分类",
+  };
   // Order: bull, transition, choppy, bear, unknown, unlabeled, then others
   const order = ["bull", "transition", "choppy", "bear", "unknown", "unlabeled"];
   const sortedKeys = Array.from(allKeys).sort((a, b) => {
@@ -609,7 +612,7 @@ function renderRegimeTable(root: HTMLElement, metrics: AccuracyMetricsV2) {
     const brier = metrics.brier_by_regime[key];
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td><span class="regime-tag ${escapeHtml(key)}">${escapeHtml(key)}</span></td>
+      <td><span class="regime-tag ${escapeHtml(key)}">${escapeHtml(regimeLabel[key] || key)}</span></td>
       <td class="num">—</td>
       <td class="num">${acc === undefined ? "—" : formatPercent(acc)}</td>
       <td class="num">${brier === undefined ? "—" : fmtNum(brier, 3)}</td>
@@ -656,16 +659,16 @@ function renderReliabilityChart(root: HTMLElement, metrics: AccuracyMetricsV2) {
           if (!data) return "";
           const [conf, hit] = data.value;
           return `<div style="font-family: var(--font-mono);">
-            <div style="color:${muted}; font-size:10px; text-transform:uppercase;">置信桶</div>
-            <div>avg conf <strong>${(conf as number).toFixed(2)}</strong></div>
-            <div>hit rate <strong>${(hit as number).toFixed(2)}</strong></div>
-            <div style="color:${muted}; font-size:11px;">n=${data.sample_size}</div>
+            <div style="color:${muted}; font-size:10px; text-transform:uppercase;">把握区间</div>
+            <div>平均把握 <strong>${(conf as number).toFixed(2)}</strong></div>
+            <div>实际命中 <strong>${(hit as number).toFixed(2)}</strong></div>
+            <div style="color:${muted}; font-size:11px;">样本 ${data.sample_size}</div>
           </div>`;
         },
       },
       xAxis: {
         type: "value", min: 0, max: 1,
-        name: "avg confidence", nameGap: 22, nameLocation: "middle",
+        name: "平均把握", nameGap: 22, nameLocation: "middle",
         nameTextStyle: { color: muted, fontSize: 11 },
         axisLine: { lineStyle: { color: border } },
         axisLabel: { color: muted, fontSize: 11 },
@@ -673,7 +676,7 @@ function renderReliabilityChart(root: HTMLElement, metrics: AccuracyMetricsV2) {
       },
       yAxis: {
         type: "value", min: 0, max: 1,
-        name: "hit rate", nameGap: 32, nameLocation: "middle", nameRotate: 90,
+        name: "实际命中率", nameGap: 32, nameLocation: "middle", nameRotate: 90,
         nameTextStyle: { color: muted, fontSize: 11 },
         axisLine: { lineStyle: { color: border } },
         axisLabel: { color: muted, fontSize: 11 },
@@ -681,7 +684,7 @@ function renderReliabilityChart(root: HTMLElement, metrics: AccuracyMetricsV2) {
       },
       series: [
         {
-          name: "perfect calibration",
+          name: "理想线",
           type: "line",
           data: [[0, 0], [1, 1]],
           showSymbol: false,
@@ -690,7 +693,7 @@ function renderReliabilityChart(root: HTMLElement, metrics: AccuracyMetricsV2) {
           z: 1,
         },
         {
-          name: "buckets",
+          name: "各区间",
           type: "scatter",
           data: points,
           symbolSize: (d: any) => Math.max(8, Math.min(28, Math.sqrt(d?.sample_size || 1) * 6)),
@@ -730,21 +733,21 @@ function renderRawVsCalibrated(root: HTMLElement, metrics: AccuracyMetricsV2) {
   };
   const rows: Row[] = [
     {
-      label: "Brier (multiclass)",
+      label: "概率准度 (Brier)",
       raw: raw.brier_multiclass,
       cal: metrics.brier_multiclass,
       lowerIsBetter: true,
       fmt: (v) => fmtNum(v, 3),
     },
     {
-      label: "Log loss",
+      label: "对数损失 (Log loss)",
       raw: raw.log_loss,
       cal: metrics.log_loss,
       lowerIsBetter: true,
       fmt: (v) => fmtNum(v, 3),
     },
     {
-      label: "ECE",
+      label: "概率偏差 (ECE)",
       raw: raw.ece,
       cal: metrics.ece,
       lowerIsBetter: true,
@@ -818,18 +821,18 @@ function renderSkillAudit(root: HTMLElement, audit: SkillAuditSummary) {
     lastChangeCls = audit.days_since_last_change <= 14 ? "live" : "cold";
   } else if (audit.audits_in_window === 0) {
     lastChangeTxt = "—";
-    lastChangeDesc = "等待 04:00 cron 首次落盘";
+    lastChangeDesc = "等待首次记录";
     lastChangeCls = "cold";
   } else {
-    lastChangeTxt = "未演化";
-    lastChangeDesc = `已审计 ${audit.audits_in_window} 天，无修改`;
+    lastChangeTxt = "无变化";
+    lastChangeDesc = `最近 ${audit.audits_in_window} 天没有变化`;
     lastChangeCls = "cold";
   }
 
   const hintCls = audit.hint_count > 0 ? "live" : "cold";
   const hintDesc = audit.hint_count > 0
-    ? "Hermes 已写入经验提示，会注入下次预测 prompt"
-    : "Hermes 尚未生成 hint（周日反思后才会出现）";
+    ? "已积累经验，会用在下次预测里"
+    : "暂未积累新经验（每周复盘后才会更新）";
 
   const nonemptyCls = audit.nonempty_in_window > 0 ? "live" : "cold";
 
@@ -840,12 +843,12 @@ function renderSkillAudit(root: HTMLElement, audit: SkillAuditSummary) {
       <div class="desc">${escapeHtml(lastChangeDesc)}</div>
     </div>
     <div class="stat ${nonemptyCls}">
-      <div class="lbl">30 天内有变更</div>
+      <div class="lbl">30 天内有变化</div>
       <div class="val">${audit.nonempty_in_window} / ${audit.audits_in_window}</div>
-      <div class="desc">非空 diff 数 / 审计天数</div>
+      <div class="desc">有变化的天数 / 检查的天数</div>
     </div>
     <div class="stat ${hintCls}">
-      <div class="lbl">Hint 文件</div>
+      <div class="lbl">已积累经验</div>
       <div class="val">${audit.hint_count}</div>
       <div class="desc">${escapeHtml(hintDesc)}</div>
     </div>
@@ -853,14 +856,12 @@ function renderSkillAudit(root: HTMLElement, audit: SkillAuditSummary) {
 
   recent.innerHTML = "";
   if (audit.most_recent.length === 0) {
-    recent.innerHTML = `<span class="day">尚无审计记录</span>`;
+    recent.innerHTML = `<span class="day">暂无记录</span>`;
     return;
   }
   for (const entry of audit.most_recent) {
     const cls = entry.has_change ? "day changed" : "day";
-    const title = entry.has_change
-      ? (typeof entry.bytes === "number" ? `${entry.bytes} bytes 变更` : "有变更")
-      : "无变更";
+    const title = entry.has_change ? "有更新" : "无变化";
     recent.innerHTML += `<span class="${cls}" title="${escapeHtml(title)}">${escapeHtml(entry.date)}</span>`;
   }
 }
@@ -880,10 +881,10 @@ function renderVsBaseline(root: HTMLElement, accuracy: AccuracySnapshot) {
   const isShort = n < VS_BASELINE_MIN_N;
 
   if (isShort) {
-    note.textContent = `样本不足 (n=${n} / ${VS_BASELINE_MIN_N})`;
+    note.textContent = `样本不足（${n} / ${VS_BASELINE_MIN_N} 条）`;
     note.classList.add("short");
   } else {
-    note.textContent = `n=${n} verified`;
+    note.textContent = `已核对 ${n} 条`;
     note.classList.remove("short");
   }
 
@@ -895,8 +896,8 @@ function renderVsBaseline(root: HTMLElement, accuracy: AccuracySnapshot) {
   };
   const cells: Cell[] = [
     { who: "Aurumers", pct: accuracy.overall_accuracy ?? null, isAurumers: true },
-    { who: "Persistence", pct: accuracy.baseline_persistence_accuracy, base: accuracy.overall_accuracy ?? null },
-    { who: "MA(5)", pct: accuracy.baseline_ma_accuracy, base: accuracy.overall_accuracy ?? null },
+    { who: "跟昨天一样", pct: accuracy.baseline_persistence_accuracy, base: accuracy.overall_accuracy ?? null },
+    { who: "5日均线", pct: accuracy.baseline_ma_accuracy, base: accuracy.overall_accuracy ?? null },
   ];
 
   row.innerHTML = cells.map((c) => {
@@ -913,11 +914,11 @@ function renderVsBaseline(root: HTMLElement, accuracy: AccuracySnapshot) {
       const sign = delta > 0 ? "↑" : delta < 0 ? "↓" : "·";
       const cls2 = delta > 0.005 ? "up" : delta < -0.005 ? "down" : "";
       const pp = Math.abs(delta * 100).toFixed(1);
-      deltaHtml = `<div class="delta ${cls2}">Aurumers ${sign}${pp}pp</div>`;
+      deltaHtml = `<div class="delta ${cls2}">Aurumers ${sign}${pp} 个百分点</div>`;
     } else if (!c.isAurumers && (c.pct === null || c.pct === undefined)) {
-      deltaHtml = `<div class="delta">基线尚无样本</div>`;
+      deltaHtml = `<div class="delta">暂无对照样本</div>`;
     } else if (c.isAurumers) {
-      deltaHtml = `<div class="delta">模型整体命中率</div>`;
+      deltaHtml = `<div class="delta">我们的整体命中率</div>`;
     }
 
     return `

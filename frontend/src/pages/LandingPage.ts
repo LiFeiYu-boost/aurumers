@@ -203,21 +203,21 @@ export function renderLanding(): HTMLElement {
           <aurumers-orb></aurumers-orb>
           <div class="hero-inner">
             <div data-anim="0">
-              <h1>把行情、新闻、历史预测，<br/>翻译成一份<span class="gold">可校准</span>的判断。</h1>
-              <p class="lead">Aurumers 每日 02:50 北京时间自动产出今日金价定性与次日方向预测，过去命中率与置信度校准全程留痕，新闻面 + 多源行情双轨输入，模型输出可追溯、可比对、可订正。</p>
+              <h1>金价会涨还是跌？<br/>用<span class="gold">数据</span>说话。</h1>
+              <p class="lead">Aurumers 每天自动分析黄金行情和新闻，告诉你金价现在是什么状况、未来大概率涨还是跌；而且把过去每一次判断准不准都公开出来——不吹牛、能查证。</p>
               <div class="hero-cta">
                 <a href="/app" class="btn btn-primary" data-route>进入应用</a>
-                <a href="/app/chat" class="btn btn-ghost" data-route>和 Hermes 聊聊金价</a>
-                <a href="/app/predictions" class="btn btn-ghost" data-route>明日预测</a>
+                <a href="/app/chat" class="btn btn-ghost" data-route>和 AI 助手聊聊金价</a>
+                <a href="/app/predictions" class="btn btn-ghost" data-route>看明日预测</a>
                 <aurumers-live-ticker></aurumers-live-ticker>
               </div>
             </div>
             <div class="hero-side" data-anim="2">
               <div class="hero-card">
-                <div class="label">下一份预测</div>
+                <div class="label">最新金价判断</div>
                 <div class="pred-direction" id="hero-pred">—</div>
-                <div class="pred-meta" id="hero-meta">等待 02:50 调度</div>
-                <div class="pred-summary" id="hero-summary">系统初始化中…</div>
+                <div class="pred-meta" id="hero-meta">等待今早自动更新</div>
+                <div class="pred-summary" id="hero-summary">正在准备数据…</div>
               </div>
               <aurumers-countdown></aurumers-countdown>
             </div>
@@ -229,50 +229,50 @@ export function renderLanding(): HTMLElement {
             <div class="icon">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             </div>
-            <h3>双源收盘交叉验证</h3>
-            <p>SGE 上海黄金交易所夜场收盘 + COMEX 国际黄金期货收盘，双轨拉取互为校验，单源失效自动降级。</p>
+            <h3>两边行情，互相印证</h3>
+            <p>同时参考上海黄金交易所和国际黄金期货的收盘价，互相对照；一个来源出问题，另一个自动顶上，数据更靠谱。</p>
           </div>
           <div class="vc" data-anim="4">
             <div class="icon">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </div>
-            <h3>02:50 北京时间自动定调</h3>
-            <p>每日固定时点产出今日定性 + 次日方向，调度由 Hermes 框架托管，挂钟触发不漂移、Cron 重试不重复。</p>
+            <h3>每天自动更新，不用盯盘</h3>
+            <p>每天固定时间自动生成最新判断：今天金价什么状况、明天大概率往哪走，打开就能看，省心。</p>
           </div>
           <div class="vc" data-anim="5">
             <div class="icon">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-6"/><path d="M6 20V10"/><path d="M18 20V4"/></svg>
             </div>
-            <h3>历史命中率与基线对照</h3>
-            <p>每条预测次日自动比对实际收盘，命中/未中持久化；同时与持续性 / MA(5) 两条朴素基线并行记录，是否真的优于基线，留给数据回答。</p>
+            <h3>猜准猜错，全部公开</h3>
+            <p>每条预测第二天都会和真实金价对一遍，准不准如实记录、谁都能查；我们到底有没有用，让数据说话，不藏着掖着。</p>
           </div>
         </section>
 
         <section class="flow">
-          <span class="section-eyebrow">运转节奏</span>
-          <h2 class="h-display h-display-md">从抓数到推送，全自动闭环。</h2>
+          <span class="section-eyebrow">它是怎么工作的</span>
+          <h2 class="h-display h-display-md">从收集行情到给你结论，全程自动。</h2>
           <div class="grid">
             <div class="step" data-anim="3">
-              <h4>采集</h4>
-              <p>30 分钟轮询金价/新闻 + SGE 夜场 + COMEX 日 K，多源去抖。</p>
+              <h4>收集</h4>
+              <p>每隔半小时自动抓取最新金价和黄金新闻，多个来源交叉核对、去伪存真。</p>
             </div>
             <div class="step" data-anim="4">
               <h4>分析</h4>
-              <p>LangChain 编排 LLM，输出结构化趋势、置信度、原因 3 条、操作建议。</p>
+              <p>AI 综合行情和新闻，给出趋势方向、把握程度、3 条理由和操作参考。</p>
             </div>
             <div class="step" data-anim="5">
-              <h4>校准</h4>
-              <p>每日 03:10 用次日实际收盘比对，回填命中率与失误模式。</p>
+              <h4>复盘</h4>
+              <p>第二天用真实收盘价复盘，自动记录这次判断到底准不准。</p>
             </div>
             <div class="step" data-anim="6">
-              <h4>推送</h4>
-              <p>Webhook / Telegram / 飞书 / 企业微信 / 邮件全通道留接口，配齐即用。</p>
+              <h4>提醒</h4>
+              <p>支持邮件、飞书、企业微信等方式，有新判断第一时间通知你。</p>
             </div>
           </div>
         </section>
 
         <section class="cta-band" data-anim="6">
-          <h2>把模型的每次判断都留痕、可比、可订正。</h2>
+          <h2>每一次判断，都看得见、对得上、不藏着。</h2>
           <a href="/app" data-route>进入看板 →</a>
         </section>
       </div>
@@ -293,18 +293,18 @@ async function hydrateHero(root: HTMLElement) {
     if (!directionEl || !metaEl || !summaryEl) return;
     if (!prediction) {
       directionEl.textContent = "—";
-      metaEl.textContent = "等待首次 02:50 触发";
-      summaryEl.textContent = "服务正在持续抓取数据中。";
+      metaEl.textContent = "等待今早首次更新";
+      summaryEl.textContent = "正在收集数据，稍后就有结果。";
       return;
     }
     directionEl.textContent = prediction.tomorrow_direction;
     const isToday = prediction.is_today !== false;
     const dateLabel = isToday
-      ? `${prediction.prediction_date} 预测次日`
-      : `${prediction.prediction_date} 旧版预测（待今日 02:50 刷新）`;
+      ? `${prediction.prediction_date} 对明天的判断`
+      : `${prediction.prediction_date} 的判断（今早会更新）`;
     metaEl.innerHTML = `
       <span class="hero-pill chip-accent">${escapeHtml(dateLabel)}</span>
-      <span>置信 ${formatPercent(prediction.tomorrow_confidence)}</span>
+      <span>把握 ${formatPercent(prediction.tomorrow_confidence)}</span>
       <span>近 30 天准确率 ${formatPercent(prediction.accuracy_window_30d)}</span>
     `;
     summaryEl.textContent = prediction.tomorrow_advice || prediction.reasoning_summary || "—";

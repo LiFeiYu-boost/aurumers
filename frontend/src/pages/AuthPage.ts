@@ -91,7 +91,7 @@ export function renderAuth({ path }: { path: string }): HTMLElement {
         <div class="auth-head">
           <span class="mark">Au</span>
           <div class="brand">Aurumers</div>
-          <div class="sub">黄金市场结构化预测</div>
+          <div class="sub">黄金涨跌趋势预测</div>
         </div>
         <div class="tabs">
           <button type="button" data-tab="login" class="${!isRegister ? "active" : ""}">登录</button>

@@ -94,7 +94,7 @@ export function renderRecords(): HTMLElement {
       <div class="rec shell">
         <span class="section-eyebrow" data-anim="0">分析记录</span>
         <h1 data-anim="0">历史分析记录</h1>
-        <p class="lead" data-anim="1">所有手动 / 调度跑出的 30 分钟分析记录都保留在此，可点击展开任意一行查看完整模型输出与原始新闻。</p>
+        <p class="lead" data-anim="1">每一次金价分析都保存在这里，点开任意一行可以看到完整结论和当时引用的新闻。</p>
 
         <div class="filters" data-anim="2">
           <label class="search">

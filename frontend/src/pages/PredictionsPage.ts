@@ -214,7 +214,7 @@ export function renderPredictions(): HTMLElement {
             <div class="arrow">
               <span class="dir" id="hero-dir">—</span>
               <span class="conf">
-                <span>置信度</span>
+                <span>把握程度</span>
                 <strong id="hero-conf">—</strong>
               </span>
             </div>
@@ -223,24 +223,24 @@ export function renderPredictions(): HTMLElement {
             <div class="calibration" id="hero-calibration"></div>
           </div>
           <div class="panel">
-            <span class="section-eyebrow">今日双源收盘</span>
+            <span class="section-eyebrow">今日收盘价</span>
             <div class="closes" style="margin-top: 14px;">
               <div class="close-card">
-                <div class="lbl">SGE 上海 · CNY/g</div>
+                <div class="lbl">上海金 · 元/克</div>
                 <div class="val" id="close-sge">—</div>
               </div>
               <div class="close-card">
-                <div class="lbl">COMEX · USD/oz</div>
+                <div class="lbl">国际金 · 美元/盎司</div>
                 <div class="val" id="close-comex">—</div>
               </div>
             </div>
-            <div class="spread-bar" id="spread-row">数据源 —</div>
+            <div class="spread-bar" id="spread-row">数据来源 —</div>
             <div style="margin-top: 18px;">
               <aurumers-countdown></aurumers-countdown>
             </div>
             <div style="margin-top: 18px; display: flex; gap: 10px;">
               <button id="rerun-btn" class="btn btn-primary"><span data-label>立即重跑预测</span></button>
-              <button id="verify-btn" class="btn btn-ghost"><span data-label>校验昨日</span></button>
+              <button id="verify-btn" class="btn btn-ghost"><span data-label>核对昨日</span></button>
             </div>
           </div>
         </section>
@@ -248,9 +248,9 @@ export function renderPredictions(): HTMLElement {
         <section class="section" data-anim="1">
           <div class="panel">
             <aurumers-section-header
-              eyebrow="宏观 + 技术信号"
-              titleText="本日 LLM 决策依据"
-              desc="prompt v3 喂给模型的 5 个客观锚点；30 天序列展示市场背景。"
+              eyebrow="影响金价的因素"
+              titleText="今天的判断参考了什么"
+              desc="AI 主要看这几个客观指标；下方折线是近 30 天的市场背景。"
             ></aurumers-section-header>
             <div class="signal-radar" id="signal-radar"></div>
           </div>
@@ -258,11 +258,11 @@ export function renderPredictions(): HTMLElement {
 
         <section class="section row" data-anim="2">
           <div class="panel">
-            <aurumers-section-header eyebrow="校准曲线" titleText="置信度 × 实际命中率" desc="对角线为理想；点越靠近对角线，模型越客观自知。"></aurumers-section-header>
+            <aurumers-section-header eyebrow="把握 vs 实际" titleText="说的“把握”靠不靠谱" desc="点越贴近对角线，说明“几成把握”就真有几成准——不虚标。"></aurumers-section-header>
             <div class="scatter" id="scatter"></div>
           </div>
           <div class="panel">
-            <aurumers-section-header eyebrow="近 5 周月历" titleText="预测命中矩阵"></aurumers-section-header>
+            <aurumers-section-header eyebrow="近 5 周" titleText="每天猜中了吗"></aurumers-section-header>
             <div class="calendar" id="calendar"></div>
           </div>
         </section>
@@ -274,11 +274,11 @@ export function renderPredictions(): HTMLElement {
               <thead>
                 <tr>
                   <th>日期</th>
-                  <th>SGE · CNY/g</th>
-                  <th>COMEX · USD/oz</th>
-                  <th>今日定性</th>
+                  <th>上海金 元/克</th>
+                  <th>国际金 美元/盎司</th>
+                  <th>今日情况</th>
                   <th>明日预测</th>
-                  <th>置信</th>
+                  <th>把握</th>
                   <th>结果</th>
                   <th>次日实际</th>
                 </tr>
@@ -364,12 +364,12 @@ function renderHero(root: HTMLElement, prediction: DailyPrediction | null, accur
 
   if (!prediction) {
     if (title) title.textContent = "尚无预测";
-    if (eyebrow) eyebrow.textContent = "等待 02:50 调度";
+    if (eyebrow) eyebrow.textContent = "等待今早更新";
     if (dir) dir.textContent = "—";
     if (conf) conf.textContent = "—";
     if (meta) meta.innerHTML = "";
-    if (reason) reason.textContent = "服务正在持续抓取数据，到点后会自动产出。";
-    if (calib) calib.textContent = "暂无校准说明";
+    if (reason) reason.textContent = "正在收集数据，每天凌晨自动生成。";
+    if (calib) calib.textContent = "暂无说明";
     return;
   }
   if (eyebrow) eyebrow.textContent = `${prediction.prediction_date} · 明日预测`;
@@ -389,18 +389,18 @@ function renderHero(root: HTMLElement, prediction: DailyPrediction | null, accur
     `;
   }
   if (reason) reason.textContent = prediction.reasoning_summary || "—";
-  if (calib) calib.textContent = chunkText(prediction.calibration_note, 360) || "暂无校准说明";
+  if (calib) calib.textContent = chunkText(prediction.calibration_note, 360) || "暂无说明";
 
   if (sgeEl) sgeEl.textContent = formatNumber(prediction.today_close_sge);
   if (comexEl) comexEl.textContent = formatNumber(prediction.today_close_comex);
   if (spreadEl) {
     const tag = ({
-      both: "双源齐到",
-      sge_only: "仅 SGE 可用",
-      comex_only: "仅 COMEX 可用",
-      neither: "双源缺失",
+      both: "两边都有",
+      sge_only: "仅上海金可用",
+      comex_only: "仅国际金可用",
+      neither: "暂时缺失",
     } as Record<string, string>)[prediction.today_close_source] || prediction.today_close_source;
-    spreadEl.textContent = `数据源 · ${tag}（两市单位不同，不直接相减）`;
+    spreadEl.textContent = `数据来源 · ${tag}（两边单位不同，不能直接相减）`;
   }
 }
 
@@ -462,56 +462,56 @@ function renderSignalRadar(
 
   const allMissing = dxy === null && us10y === null && atr === null && rsi === null && z === null;
   if (allMissing) {
-    host.innerHTML = `<div class="empty-hint">今日预测未携带 macro/技术指标（v2 之前的旧记录）</div>`;
+    host.innerHTML = `<div class="empty-hint">这条旧预测没有附带这些指标。</div>`;
     return;
   }
 
   host.innerHTML = `
     <div class="badges">
       <aurumers-signal-badge
-        label="DXY (TWUSD)"
+        label="美元强弱"
         value="${fmtRaw(dxy, 2)}"
-        delta="${fmtSigned(dxy5d, 2, "%")} 5d"
+        delta="${fmtSigned(dxy5d, 2, "%")} 近5天"
         tone="${dxyTone(dxy5d)}"
-        hint="贸易加权美元指数（FRED DTWEXBGS）"
+        hint="美元越强，金价通常越受压"
       ></aurumers-signal-badge>
       <aurumers-signal-badge
-        label="US10Y real"
+        label="美债实际利率"
         value="${fmtRaw(us10y, 2, "%")}"
-        delta="${fmtSigned(us10y5d, 2, "%")} 5d"
+        delta="${fmtSigned(us10y5d, 2, "%")} 近5天"
         tone="${us10yTone(us10y5d)}"
-        hint="10 年期 TIPS 实际收益率（FRED DFII10）"
+        hint="利率越高，持有黄金越不划算（金价偏空）"
       ></aurumers-signal-badge>
       <aurumers-signal-badge
-        label="ATR(14)"
+        label="近期波动幅度"
         value="${fmtRaw(atr, 2)}"
         tone="neutral"
-        hint="SGE Au(T+D) 真实波幅"
+        hint="金价最近每天大约波动多少"
       ></aurumers-signal-badge>
       <aurumers-signal-badge
-        label="RSI(14)"
+        label="买卖力度"
         value="${fmtRaw(rsi, 1)}"
         tone="${rsiTone(rsi)}"
-        hint="${rsi !== null && rsi >= 70 ? "超买区" : rsi !== null && rsi <= 30 ? "超卖区" : "中性区"}"
+        hint="${rsi !== null && rsi >= 70 ? "涨过头，警惕回调" : rsi !== null && rsi <= 30 ? "跌过头，可能反弹" : "处于正常区间"}"
       ></aurumers-signal-badge>
       <aurumers-signal-badge
-        label="距 MA20 z"
+        label="偏离近期均价"
         value="${z === null ? "—" : `${z.toFixed(2)}σ`}"
         tone="neutral"
-        hint="(close − MA20) / σ_20"
+        hint="当前价比近 20 天平均价高还是低"
       ></aurumers-signal-badge>
     </div>
     <div class="sparkline-strip">
       <div class="sparkline-cell">
-        <div class="head"><span class="lbl">DXY · 30d</span><span class="val">${fmtRaw(dxy, 2)}</span></div>
+        <div class="head"><span class="lbl">美元强弱 · 近30天</span><span class="val">${fmtRaw(dxy, 2)}</span></div>
         <div class="spark" id="spark-dxy"></div>
       </div>
       <div class="sparkline-cell">
-        <div class="head"><span class="lbl">US10Y real · 30d</span><span class="val">${fmtRaw(us10y, 2, "%")}</span></div>
+        <div class="head"><span class="lbl">美债实际利率 · 近30天</span><span class="val">${fmtRaw(us10y, 2, "%")}</span></div>
         <div class="spark" id="spark-us10y"></div>
       </div>
       <div class="sparkline-cell">
-        <div class="head"><span class="lbl">RSI(14) · 30d</span><span class="val">${fmtRaw(rsi, 1)}</span></div>
+        <div class="head"><span class="lbl">买卖力度 · 近30天</span><span class="val">${fmtRaw(rsi, 1)}</span></div>
         <div class="spark" id="spark-rsi"></div>
       </div>
     </div>

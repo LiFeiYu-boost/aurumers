@@ -135,7 +135,8 @@ function renderOutlook(el: Element, items: OutlookItem[]) {
         <div class="olabel">${o.label}</div>
         <div class="odir ${up ? "up" : "down"}">${o.direction}</div>
         <div class="ometric">上涨概率 ${(o.prob_up * 100).toFixed(0)}%</div>
-        <div class="ometric">历史命中 <span class="acc">${acc}</span>${o.skill_pp != null ? ` · 较猜涨 ${o.skill_pp >= 0 ? "+" : ""}${o.skill_pp}pp` : ""}</div>
+        <div class="ometric">历史命中 <span class="acc">${acc}</span></div>
+        ${o.skill_pp != null ? `<div class="ometric" style="font-size:12px;">比“一直猜涨”多准 ${o.skill_pp} 个百分点</div>` : ""}
       </div>`;
   }).join("");
 }
@@ -154,7 +155,7 @@ function renderResult(el: Element, r: HoldingsAdvice, fmt: (n: number) => string
        <div class="detail-box" id="db" style="display:none">
          参考减持区间:约 <strong>${d.sell_grams_range[0]}–${d.sell_grams_range[1]} 克</strong>
          （约 ¥${fmt(d.sell_value_range![0])}–¥${fmt(d.sell_value_range![1])}）。
-         <br>这是把黄金敞口降向信号目标水平的参考量,非精确指令,请结合自身情况分批操作。
+         <br>这是把黄金仓位降到信号建议水平的参考量,不是精确指令,请结合自身情况分批操作。
        </div>`
     : `<div class="detail-box">当前信号不建议减仓。${s.direction === "看多" ? "如计划加仓,需在你的黄金配置上限内顺势进行。" : "建议持有观望,等趋势转明确。"}</div>`;
 
@@ -168,9 +169,9 @@ function renderResult(el: Element, r: HoldingsAdvice, fmt: (n: number) => string
         <span style="color:var(--c-text-mute);font-size:13px">截至 ${s.asof} · ${s.horizon}</span>
       </div>
       <div class="chips">
-        <span class="chip">置信度 ${s.confidence}</span>
-        <span class="chip">看多概率 ${(s.prob_up * 100).toFixed(0)}%</span>
-        <span class="chip">${s.horizon_agreement}/3 周期看多</span>
+        <span class="chip">把握 ${s.confidence}</span>
+        <span class="chip">上涨概率 ${(s.prob_up * 100).toFixed(0)}%</span>
+        <span class="chip">${s.horizon_agreement}/3 看多一致</span>
         ${crowd}
       </div>
       <div class="kv">

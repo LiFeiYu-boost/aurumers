@@ -6,7 +6,7 @@ import { router } from "../router";
 const NAV = [
   { href: "/app", label: "看板" },
   { href: "/app/predictions", label: "预测中心" },
-  { href: "/app/chat", label: "Hermes" },
+  { href: "/app/chat", label: "AI 助手" },
   { href: "/app/holdings", label: "持仓助手" },
   { href: "/app/records", label: "历史记录" },
   { href: "/app/insights", label: "洞察" },
@@ -206,7 +206,7 @@ export class AppShell extends LitElement {
           <a class="brand" href="/" data-route>
             <span class="mark">Au</span>
             <span class="brand-name">Aurumers</span>
-            <span class="brand-tag">· 黄金市场结构化预测</span>
+            <span class="brand-tag">· 黄金涨跌趋势预测</span>
           </a>
           <nav @click=${this._closeMenu}>
             ${NAV.map((item) => html`
