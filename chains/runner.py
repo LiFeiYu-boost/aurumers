@@ -6,15 +6,32 @@ from uuid import uuid4
 
 from chains.analysis_chain import run_analysis_chain
 from chains.input_builder import build_analysis_input
+from chains.verifier import _direction_from_close
 from config import settings
 from schemas import AnalysisRecord, AnalysisStatus, Trend
-from storage.record_manager import init_storage, save_record
+from storage.record_manager import get_latest_records, init_storage, save_record
 from tools.gold_price import get_gold_price
 from tools.news import get_gold_news
 
 
 logger = logging.getLogger(__name__)
 RUN_LOCK = Lock()
+
+
+def _trend_from_price(price_value: float | None) -> Trend:
+    """趋势由价格涨跌幅确定性计算，锚点取上一条分析记录（约 30 分钟前）。
+
+    与日预测验证口径一致：复用 verifier._direction_from_close 的阈值
+    （0.15% 或 0.5/克取大值）。当前记录尚未保存，故 get_latest_records(1)
+    取到的即上一个点。
+    """
+    if price_value is None:
+        return Trend.UNKNOWN
+    prev = get_latest_records(1)
+    anchor = prev[0].price_value if prev else None
+    if anchor is None:
+        return Trend.UNKNOWN
+    return _direction_from_close(anchor, price_value)
 
 
 def _resolve_status(*, price_ok: bool, news_ok: bool, output_ok: bool) -> AnalysisStatus:
@@ -78,7 +95,7 @@ def run_gold_analysis_once(source: str = "manual") -> AnalysisRecord:
             price_value=analysis_input.price_value,
             news=analysis_input.news,
             summary=llm_output.summary if llm_output else "暂无总结",
-            trend=llm_output.trend if llm_output else Trend.UNKNOWN,
+            trend=_trend_from_price(analysis_input.price_value),
             reasons=llm_output.reasons if llm_output else [],
             advice=llm_output.advice if llm_output else "暂无建议",
             raw_output=raw_output,
