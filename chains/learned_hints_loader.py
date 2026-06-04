@@ -124,21 +124,25 @@ def load_recent_hints(
     Empty / missing dir → returns ``EMPTY_TEXT`` (no envelope, just the
     fallback string). Callers should not need to special-case this.
     """
-    if not HINT_DIR.is_dir():
-        return EMPTY_TEXT
+    # Everything that stats the directory or its entries lives in one try:
+    # Path.is_dir() re-raises EACCES (only ENOENT/ENOTDIR-style errors return
+    # False), and the sort key stats each file. Under systemd ProtectHome the
+    # whole subtree is EACCES — that must degrade to EMPTY_TEXT, not crash the
+    # daily run (seen in prod: PermissionError escaping run_daily_prediction).
     try:
+        if not HINT_DIR.is_dir():
+            return EMPTY_TEXT
         files = [p for p in HINT_DIR.iterdir() if p.is_file() and p.suffix.lower() == ".md"]
+        # Primary: newest mtime first. Secondary: filename desc (so "03-…" beats
+        # "01-…" when Hermes writes all 3 in the same epoch second — without
+        # this tiebreak, iterdir() order is filesystem-defined and could promote
+        # an arbitrary hint, round-3 audit LOW).
+        files.sort(key=lambda p: (p.stat().st_mtime, p.name), reverse=True)
     except OSError as exc:
         logger.warning("learned_hints: scan failed dir=%s err=%s", HINT_DIR, exc)
         return EMPTY_TEXT
     if not files:
         return EMPTY_TEXT
-
-    # Primary: newest mtime first. Secondary: filename desc (so "03-…" beats
-    # "01-…" when Hermes writes all 3 in the same epoch second — without
-    # this tiebreak, iterdir() order is filesystem-defined and could promote
-    # an arbitrary hint, round-3 audit LOW).
-    files.sort(key=lambda p: (p.stat().st_mtime, p.name), reverse=True)
     selected = files[: max(1, limit)]
 
     lines: list[str] = []

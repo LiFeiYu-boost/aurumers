@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from datetime import datetime, timezone
 
@@ -39,11 +40,13 @@ FEATURES = [
     "dxy_chg5", "dxy_chg20", "vix", "vix_chg5",
 ]
 
-# FRED 序列 → 内部名(可被 FRED_PROXY 环境变量影响取数)
+# FRED 序列 → 内部名(经 tools.macro 官方 API 取数,失败回退 macro_history)
 _FRED = {
     "dfii10": "DFII10", "dgs10": "DGS10", "dgs2": "DGS2",
     "dxy": "DTWEXBGS", "vix": "VIXCLS",
 }
+
+logger = logging.getLogger(__name__)
 
 
 # ----------------------------- 取数 -----------------------------
@@ -62,16 +65,24 @@ def load_gold_sge(csv: str | None = None) -> pd.DataFrame:
     return g[g["Close"] > 0].dropna()
 
 
-def _fred_csv(series_id: str) -> pd.Series:
-    import urllib.request
-    url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}"
-    proxy = os.environ.get("FRED_PROXY")
-    opener = urllib.request.build_opener(
-        urllib.request.ProxyHandler({"https": proxy, "http": proxy}) if proxy
-        else urllib.request.ProxyHandler({}))
-    with opener.open(url, timeout=40) as r:
-        df = pd.read_csv(r, parse_dates=["observation_date"]).set_index("observation_date")
-    return pd.to_numeric(df.iloc[:, 0], errors="coerce")
+def _fred_series(series_id: str) -> pd.Series:
+    """统一走 tools.macro 官方 API 取数(成功自动落 macro_history)。
+
+    取数失败时回退 macro_history 里上次成功的全量历史 —— 信号降级为旧数据,
+    而不是把 /api/signal/* 整个打成 503。仅"失败且无历史"才抛异常。
+    """
+    from tools.macro import fred_series, history_series
+    try:
+        series = fred_series(series_id)
+    except Exception as exc:
+        series = history_series(series_id)
+        if not series:
+            raise RuntimeError(
+                f"FRED {series_id}: fetch failed and no cached history") from exc
+        logger.warning("FRED %s fetch failed (%s); using cached history through %s",
+                       series_id, exc, series[-1][0])
+    idx = pd.to_datetime([d for d, _ in series])
+    return pd.Series([v for _, v in series], index=idx, name=series_id)
 
 
 def load_macro(csv_dir: str | None = None) -> pd.DataFrame:
@@ -83,7 +94,7 @@ def load_macro(csv_dir: str | None = None) -> pd.DataFrame:
                             parse_dates=["observation_date"]).set_index("observation_date")
             cols[name] = pd.to_numeric(s.iloc[:, 0], errors="coerce")
         else:
-            cols[name] = _fred_csv(sid)
+            cols[name] = _fred_series(sid)
     return pd.DataFrame(cols).sort_index()
 
 

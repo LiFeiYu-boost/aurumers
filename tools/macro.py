@@ -2,7 +2,13 @@
 
 We use FRED instead of Yahoo Finance because (1) Yahoo's chart endpoint returns
 HTTP 429/403 from the production VPS even with a browser User-Agent, and (2)
-FRED is a stable, public, no-auth source whose CSV format never changes.
+FRED is a stable, public source.
+
+Data path: the official JSON API ``api.stlouisfed.org`` with a free
+``FRED_API_KEY``. The old no-auth CSV export (``fredgraph.csv``) became
+unreachable from datacenter IPs in 2026-06 — TLS completes, then the edge
+RSTs the connection. Verified dead from this VPS via direct, all mihomo
+nodes, and WARP; the JSON API is reachable directly.
 
 Series:
 - ``DTWEXBGS`` (Trade-Weighted USD Index, broad goods) → DXY proxy. Correlation
@@ -25,10 +31,9 @@ degradation explicitly rather than the daily run crashing.
 """
 from __future__ import annotations
 
-import csv
-import io
 import json
 import logging
+import os
 import sqlite3
 import urllib.error
 import urllib.request
@@ -40,14 +45,9 @@ from storage.record_manager import DB_PATH
 
 logger = logging.getLogger(__name__)
 
-_FRED_BASE = "https://fred.stlouisfed.org/graph/fredgraph.csv?id="
+_FRED_API_BASE = "https://api.stlouisfed.org/fred/series/observations"
 _DTWEXBGS = "DTWEXBGS"
 _DFII10 = "DFII10"
-# Don't spoof a browser User-Agent: FRED's edge silently throttles requests
-# claiming to be Mozilla but lacking the rest of a real browser fingerprint
-# (the call hangs to its read deadline). Python-urllib's default UA passes
-# through cleanly in ~1.5s. Verified by side-by-side probe on the deploy host.
-_USER_AGENT: str | None = None
 _TIMEOUT = 30
 _FETCH_RETRIES = 2  # total attempts = retries + 1
 _RETRY_BACKOFF_SECONDS = 1.5
@@ -118,40 +118,41 @@ def _persist_history(series_id: str, series: Iterable[tuple[str, float]]) -> Non
         conn.commit()
 
 
-def _fetch_fred_csv(series_id: str) -> list[tuple[str, float]]:
-    """Pull the full FRED CSV for ``series_id``. Returns ascending date series.
+def _fetch_fred_series(series_id: str) -> list[tuple[str, float]]:
+    """Pull the full series via the FRED JSON API. Returns ascending date series.
 
     FRED uses ``.`` to denote missing values for non-trading days; we drop them.
-    Retries with backoff on transient errors. Raises after the final attempt;
-    caller catches.
+    Retries with backoff on transient errors (but not on 4xx — a bad/missing
+    key never heals by retrying). Raises after the final attempt; caller catches.
     """
     import time as _time
-    url = f"{_FRED_BASE}{series_id}"
-    request = (
-        urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
-        if _USER_AGENT is not None
-        else urllib.request.Request(url)
-    )
-    last_exc: Exception | None = None
+    api_key = os.environ.get("FRED_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("FRED_API_KEY is not set")
+    url = f"{_FRED_API_BASE}?series_id={series_id}&api_key={api_key}&file_type=json"
     for attempt in range(_FETCH_RETRIES + 1):
         try:
-            with urllib.request.urlopen(request, timeout=_TIMEOUT) as response:
+            with urllib.request.urlopen(url, timeout=_TIMEOUT) as response:
                 text = response.read().decode("utf-8")
             break
-        except (urllib.error.URLError, urllib.error.HTTPError, OSError, TimeoutError) as exc:
-            last_exc = exc
+        except urllib.error.HTTPError as exc:
+            # Don't re-raise the HTTPError itself: its .url/.filename carry the
+            # full request URL including api_key, one repr()/logger.exception
+            # away from the logs. Replace with a sanitized error; `from None`
+            # so the original object isn't kept as __cause__ either.
+            if 400 <= exc.code < 500 or attempt >= _FETCH_RETRIES:
+                raise RuntimeError(
+                    f"FRED {series_id}: HTTP {exc.code} {exc.reason}") from None
+            _time.sleep(_RETRY_BACKOFF_SECONDS * (2 ** attempt))
+        except (urllib.error.URLError, OSError, TimeoutError) as exc:
             if attempt < _FETCH_RETRIES:
                 _time.sleep(_RETRY_BACKOFF_SECONDS * (2 ** attempt))
                 continue
             raise
-    rows = list(csv.reader(io.StringIO(text)))
-    if not rows or len(rows) < 2:
-        raise RuntimeError(f"FRED {series_id}: empty response")
+    observations = json.loads(text).get("observations", [])
     out: list[tuple[str, float]] = []
-    for row in rows[1:]:
-        if len(row) < 2:
-            continue
-        date_str, raw = row[0].strip(), row[1].strip()
+    for obs in observations:
+        date_str, raw = (obs.get("date") or "").strip(), (obs.get("value") or "").strip()
         if not date_str or raw in ("", "."):
             continue
         try:
@@ -164,10 +165,31 @@ def _fetch_fred_csv(series_id: str) -> list[tuple[str, float]]:
     return out
 
 
+def fred_series(series_id: str) -> list[tuple[str, float]]:
+    """Fetch the full FRED series and persist it to ``macro_history``.
+
+    Public entry point shared with ``chains.trend_signal``; the history write
+    is what makes the stale-data fallback there possible.
+    """
+    series = _fetch_fred_series(series_id)
+    _persist_history(series_id, series)
+    return series
+
+
+def history_series(series_id: str) -> list[tuple[str, float]]:
+    """Full cached series from ``macro_history``, ascending. Empty if never fetched."""
+    _ensure_tables()
+    with closing(sqlite3.connect(DB_PATH)) as conn:
+        rows = conn.execute(
+            "SELECT date, value FROM macro_history WHERE series_id = ? ORDER BY date",
+            (series_id,),
+        ).fetchall()
+    return [(d, v) for d, v in rows]
+
+
 def _build_snapshot(series_id: str, source_label: str) -> dict:
     """Live fetch + persist + return snapshot dict."""
-    series = _fetch_fred_csv(series_id)
-    _persist_history(series_id, series)
+    series = fred_series(series_id)
     latest_date, latest_value = series[-1]
     change_5d_pct: float | None = None
     if len(series) >= 6:
@@ -257,8 +279,7 @@ def _historical_lookup(
         ).fetchone()[0]
     if existing == 0:
         try:
-            series = _fetch_fred_csv(series_id)
-            _persist_history(series_id, series)
+            fred_series(series_id)
         except Exception as exc:
             # Same broad-catch reasoning as _fetch_live above.
             logger.warning("macro warm %s failed: %s", series_id, exc)
@@ -307,4 +328,6 @@ __all__ = [
     "fetch_us10y_real",
     "fetch_dxy_proxy_historical",
     "fetch_us10y_real_historical",
+    "fred_series",
+    "history_series",
 ]

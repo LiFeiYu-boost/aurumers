@@ -93,6 +93,10 @@ async def _daily_action(*, reason: str) -> None:
         logger.info("daily: today already predicted, skip cold-start")
         return
     prediction = await asyncio.to_thread(run_daily_prediction, today)
+    if prediction is None:
+        # run_daily_prediction 周末/节假日跳过时返回 None(内部已记 skip 日志)
+        logger.info("daily(%s): no prediction for %s, skip publish", reason, today)
+        return
     await event_hub.publish("daily_prediction_ready", prediction.model_dump(mode="json"))
     logger.info(
         "daily(%s) done date=%s tomorrow=%s confidence=%.2f",
