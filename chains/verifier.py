@@ -12,9 +12,24 @@ from storage.record_manager import (
     update_record_outcome,
 )
 from tools.gold_close import fetch_dual_close, fetch_dual_close_from_ohlc
+from tools.market_time import is_post_close_window
+
+try:
+    from zoneinfo import ZoneInfo
+
+    _BJ_TZ = ZoneInfo("Asia/Shanghai")
+except Exception:  # pragma: no cover - zoneinfo unavailable; deploy enforces Asia/Shanghai
+    _BJ_TZ = None
 
 
 logger = logging.getLogger(__name__)
+
+
+def _today_beijing() -> str:
+    """今天的北京日期 (YYYY-MM-DD)，用于判定 next_day 是否就是'今天'。"""
+    if _BJ_TZ is not None:
+        return datetime.now(tz=_BJ_TZ).strftime("%Y-%m-%d")
+    return datetime.now().strftime("%Y-%m-%d")
 
 
 def _direction_from_close(anchor_close: float, actual_close: float) -> Trend:
@@ -39,7 +54,10 @@ def verify_prediction(
     different units — comparing across markets would silently corrupt direction.
 
     historical_mode=True: pull next-day close from the locked daily_ohlc table
-    instead of the live feed. Used by the backtest pipeline.
+    instead of the live feed. Used by the backtest pipeline. Note the live feed
+    ignores its date argument (it only ever returns the quote "right now"), so
+    verification of any past next_day auto-routes to daily_ohlc even without this
+    flag — only a next_day that equals today uses the live feed.
 
     force=True: re-run even if the row was already verified. Use when the
     original verification ran against a stale / wrong actual close (data
@@ -60,9 +78,18 @@ def verify_prediction(
         next_dt += timedelta(days=1)
     next_day = next_dt.strftime("%Y-%m-%d")
 
-    # If we still are before the actual trading day completion, the upstream feed
-    # will return the same value as the anchor — guarded below by the byte-equal check.
-    if historical_mode:
+    # The live feed (fetch_dual_close) ignores its date argument — it always
+    # returns the quote "right now". That is a valid proxy for next_day's close
+    # ONLY when next_day is today (the normal 03:10 verify of yesterday's
+    # prediction). For any older next_day — a catch-up after a missed / weekend /
+    # network-glitch verification — the live quote is the WRONG trading day and
+    # would compare the anchor against today's price, fabricating a direction.
+    # Route those to the locked daily_ohlc, which is pinned to next_day. Even when
+    # next_day IS today, the live quote only equals today's close inside the
+    # post-close window (weekday 02:30–09:00 Beijing) — a cold-start catch-up
+    # firing intraday would otherwise persist a mid-session price as the close,
+    # permanently (the verified_correct short-circuit above never re-runs).
+    if historical_mode or next_day != _today_beijing() or not is_post_close_window():
         sge, comex, status = fetch_dual_close_from_ohlc(next_day)
     else:
         sge, comex, status = fetch_dual_close(next_day)

@@ -261,6 +261,52 @@ class DailyLockTests(_DBBackedTest):
         self.assertEqual(len(result["errors"]), 2)
         self.assertTrue(all("upstream has no row" in e for e in result["errors"]))
 
+    def test_lock_no_fallback_outside_post_close_window(self):
+        """akshare miss + intraday clock (same day): the huilv live fallback is a
+        mid-session quote — locking it would be permanent (INSERT OR IGNORE).
+        Must record errors instead of inserting."""
+        from zoneinfo import ZoneInfo
+        from chains import daily_lock
+
+        # 2026-05-08 is a Friday; 14:00 Beijing is mid day-session (outside 02:30–09:00).
+        intraday = datetime(2026, 5, 8, 14, 0, tzinfo=ZoneInfo("Asia/Shanghai"))
+        with patch("chains.daily_lock.fetch_single_day", return_value=None), \
+                patch("chains.daily_lock.beijing_now", return_value=intraday), \
+                patch("tools.market_time.beijing_now", return_value=intraday):
+            result = daily_lock.lock_daily_ohlc("2026-05-08")
+
+        self.assertEqual(result["inserted"], {"sge": 0, "comex": 0})
+        self.assertEqual(len(result["errors"]), 2)
+        self.assertTrue(all("upstream has no row" in e for e in result["errors"]))
+        with sqlite3.connect(self.db_path) as conn:
+            count = conn.execute(
+                "SELECT COUNT(*) FROM daily_ohlc WHERE date='2026-05-08'"
+            ).fetchone()[0]
+        self.assertEqual(count, 0)
+
+    def test_lock_uses_fallback_inside_post_close_window(self):
+        """In the 02:30–09:00 window, an akshare miss for TODAY may still lock the
+        huilv live quote (live price == today's close in this window)."""
+        from zoneinfo import ZoneInfo
+        from chains import daily_lock
+
+        # 2026-05-08 is a Friday; 03:05 Beijing is the lock cron — inside the window.
+        post_close = datetime(2026, 5, 8, 3, 5, tzinfo=ZoneInfo("Asia/Shanghai"))
+        with patch("chains.daily_lock.fetch_single_day", return_value=None), \
+                patch("chains.daily_lock.beijing_now", return_value=post_close), \
+                patch("tools.market_time.beijing_now", return_value=post_close), \
+                patch("tools.gold_close.fetch_sge_close", return_value=1005.0), \
+                patch("tools.gold_close.fetch_comex_close", return_value=2410.0):
+            result = daily_lock.lock_daily_ohlc("2026-05-08")
+
+        self.assertEqual(result["inserted"], {"sge": 1, "comex": 1})
+        self.assertEqual(result["errors"], [])
+        with sqlite3.connect(self.db_path) as conn:
+            row = conn.execute(
+                "SELECT close FROM daily_ohlc WHERE date='2026-05-08' AND source='sge'"
+            ).fetchone()
+        self.assertEqual(row[0], 1005.0)
+
 
 # ---------------------------------------------------------------------------
 # Prompt + payload integration

@@ -25,6 +25,7 @@ from tools.gold_history import (
     insert_ohlc_row,
     load_existing_dates,
 )
+from tools.market_time import beijing_now, is_post_close_window
 
 
 logger = logging.getLogger(__name__)
@@ -70,13 +71,20 @@ def lock_daily_ohlc(
                     continue
                 row = fetch_single_day(target, source)
                 if row is None:
-                    from tools.gold_close import fetch_sge_close, fetch_comex_close
-                    fb_close = fetch_sge_close(target) if source == "sge" else fetch_comex_close(target)
+                    # The huilv fallback is the LIVE quote — valid as target's close
+                    # only when target is today AND we're in the post-close window
+                    # (weekday 02:30–09:00 Beijing). Outside that, writing it would
+                    # permanently lock an intraday / wrong-day price (INSERT OR
+                    # IGNORE rows are never rewritten).
+                    fb_close = None
+                    if target == beijing_now().strftime("%Y-%m-%d") and is_post_close_window():
+                        from tools.gold_close import fetch_sge_close, fetch_comex_close
+                        fb_close = fetch_sge_close(target) if source == "sge" else fetch_comex_close(target)
                     if fb_close is not None:
                         row = {"date": target, "open": None, "high": None, "low": None, "close": fb_close, "volume": None}
                         logger.warning("daily_lock %s %s: akshare miss, used huilv fallback close=%s", source, target, fb_close)
                     else:
-                        errors.append(f"{source}: both akshare and huilv have no row for {target}")
+                        errors.append(f"{source}: upstream has no row for {target}")
                         continue
                 insert_ohlc_row(conn, source, row, locked_at)
                 inserted[source] = 1

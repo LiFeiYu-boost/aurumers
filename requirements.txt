@@ -10,3 +10,6 @@ PySocks==1.7.1  # SOCKS5 proxy adapter for requests; needed when GDELT goes via 
 uvicorn==0.44.0
 tzdata==2025.2
 akshare>=1.18.0
+argon2-cffi>=25.1.0  # session token hashing (auth_utils)
+joblib>=1.5.0  # trend_signal model persistence
+scikit-learn>=1.9.0  # trend_signal logistic baseline
